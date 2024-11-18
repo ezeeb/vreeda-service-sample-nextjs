@@ -6,11 +6,57 @@ import DeviceList from '@/components/DeviceList'; // Importieren Sie die DeviceL
 import { signIn, signOut, useSession } from 'next-auth/react';
 import { Button, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
+import CustomPatternControl from '@/components/CustomPatternColtrol';
 
 export default function Home() {
   const { data: session, status } = useSession(); // Session-Status abrufen
   const [grantStatus, setGrantStatus] = useState<"active" | "needs renewal" | null>(null);
   const [loadingGrant, setLoadingGrant] = useState(false);
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]); 
+
+  const fetchSelectedDevices = async () => {
+    try {
+      const response = await fetch(`/api/user/configuration`);
+      if (!response.ok) throw new Error("Failed to fetch configuration");
+      const data = await response.json();
+      setSelectedDevices(data.devices || []);
+    } catch (error) {
+      console.error("Error fetching selected devices:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchSelectedDevices();
+  }, []);
+
+  const handleSelectionChange = async (deviceId: string, isSelected: boolean) => {
+    const updatedDevices = isSelected
+    ? [...selectedDevices, deviceId]
+    : selectedDevices.filter((id) => id !== deviceId);
+
+    setSelectedDevices(updatedDevices);
+
+    // Save changes to the backend
+    try {
+      const response = await fetch("/api/user/configuration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          configuration: { devices: updatedDevices },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update configuration");
+      }
+
+      console.log("Configuration updated successfully");
+    } catch (error) {
+      console.error("Error updating configuration:", error);
+    }
+  };
 
   // Check grant status on mount
   useEffect(() => {
@@ -108,7 +154,16 @@ export default function Home() {
               </Typography>
             </Box>
 
-            <DeviceList />
+            <DeviceList selectedDevices={selectedDevices} onSelectionChange={handleSelectionChange}/>
+
+            <Box sx={{ width: '100%', mt: 4 }}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Typography variant="h5" gutterBottom>
+                  Custom Patterns
+                </Typography>
+              </Box>
+              <CustomPatternControl selectedDevices={selectedDevices}/>
+            </Box>
           </>
         ) : (
           <>
