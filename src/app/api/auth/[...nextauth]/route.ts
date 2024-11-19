@@ -32,6 +32,7 @@ export const authOptions: AuthOptions = {
     ],
     callbacks: {
         async jwt({ token, account, profile }) {
+          //console.log("jwt callback: ", token, account, profile)
           if (account) {
             token.id = profile.id
             token.accessToken = account.access_token;
@@ -49,6 +50,8 @@ export const authOptions: AuthOptions = {
       },
     events: {
       async signIn({user, account, profile}) {
+        //console.log("signIn callback: ", user, account, profile)
+
         //Connect to MongoDB
         await connectToDatabase();
     
@@ -65,13 +68,15 @@ export const authOptions: AuthOptions = {
                   accessTokenExpiration: account.expires_at
                     ? new Date(account.expires_at * 1000)
                     : undefined,
-                  refreshTokenExpiration: undefined, // Set if available
+                  refreshTokenExpiration: account.refresh_token_expires_in
+                    ? new Date(Date.now() + account.refresh_token_expires_in * 1000)
+                    : undefined,
                 },
                 updatedAt: new Date(),
               },
               { upsert: true, new: true }
             );
-            console.log("UserContext created/updated:", updatedContext);
+            //console.log("UserContext created/updated:", updatedContext);
           } catch (error) {
             console.error("Error updating UserContext:", error);
           }
