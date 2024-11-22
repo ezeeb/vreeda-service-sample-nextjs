@@ -1,4 +1,5 @@
 # docker-compose.yml
+name: vreeda-service-sample-nextjs
 
 services:
   mongodb:
@@ -18,8 +19,8 @@ services:
     entrypoint: >
       /bin/sh -c "
       while true; do
-        curl -k -X GET https://host.docker.internal:3000/api/jobs/refresh-tokens?key=your-secure-key;
         sleep 60;
+        curl -k -X GET https://host.docker.internal:3000/api/jobs/refresh-tokens?key=your-secure-key;
       done
       "
 
