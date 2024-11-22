@@ -38,39 +38,41 @@ export default function CustomPatternControl({selectedDevices}: {selectedDevices
     };
 
     return (
-        <Card variant="outlined" sx={{ mb: 2, p: 2, backgroundColor: '#2A1D24' }}>
-          <CardContent>
-            <Box display="flex" flexDirection="column" gap={2}>
-                <TextField
-                    label="Custom Pattern"
-                    variant="outlined"
-                    multiline
-                    rows={10}
-                    value={pattern}
-                    onChange={(e) => setPattern(e.target.value)}
-                    fullWidth
-                    InputLabelProps={{
-                    sx: { color: "white" }, // Optional: style the label
-                    }}
-                    sx={{
-                    input: { color: "white" }, // Optional: style the text
-                    }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                    More information on custom patterns on{" "}
-                    <Link href="https://api.vreeda.com/" target="_blank" rel="noopener noreferrer">
-                        https://api.vreeda.com/
-                    </Link>
-                </Typography>
-                <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleRunClicked}
-                >
-                    Run
-                </Button>
-            </Box>
-          </CardContent>
-        </Card>
+        <Box sx={{ pb: 4 }}>
+            <Card variant="outlined" sx={{ p: 2, backgroundColor: '#2A1D24' }}>
+                <CardContent>
+                    <Box display="flex" flexDirection="column" gap={2}>
+                        <TextField
+                            label="Custom Pattern"
+                            variant="outlined"
+                            multiline
+                            rows={10}
+                            value={pattern}
+                            onChange={(e) => setPattern(e.target.value)}
+                            fullWidth
+                            InputLabelProps={{
+                            sx: { color: "white" }, // Optional: style the label
+                            }}
+                            sx={{
+                            input: { color: "white" }, // Optional: style the text
+                            }}
+                        />
+                        <Typography variant="body2" color="text.secondary">
+                            More information on custom patterns on{" "}
+                            <Link href="https://api.vreeda.com/" target="_blank" rel="noopener noreferrer">
+                                https://api.vreeda.com/
+                            </Link>
+                        </Typography>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleRunClicked}
+                        >
+                            Run
+                        </Button>
+                    </Box>
+                </CardContent>
+            </Card>
+        </Box>
     );
 }

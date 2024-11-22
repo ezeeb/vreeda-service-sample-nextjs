@@ -57,62 +57,64 @@ export default function DeviceControl({ id, model, selected, onSelectionChange}:
   };
 
   return (
-    <Card variant="outlined" sx={{ mb: 2, p: 2, backgroundColor: '#2A1D24' }}>
-      <CardContent>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          {/* Selection Checkbox */}
-          <FormControlLabel
+    <Box sx={{ pb: 4 }}>
+      <Card variant="outlined" sx={{ p: 2, backgroundColor: '#2A1D24' }}>
+        <CardContent>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            {/* Selection Checkbox */}
+            <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={selected}
+                    onChange={handleSelectionChange}
+                    color="primary"
+                  />
+                }
+                label=""
+                sx={{ mr: 1 }}
+              />
+            <Typography variant="h6">
+              {model.tags?.customDeviceName || 'Unnamed Device'}
+            </Typography>
+            {/* Switch positioned at top-right corner */}
+            <FormControlLabel
               control={
-                <Checkbox
-                  checked={selected}
-                  onChange={handleSelectionChange}
+                <Switch
+                  checked={isOn || false}
+                  onChange={toggleDevice}
                   color="primary"
+                  disabled={!model.connected?.value}
                 />
               }
               label=""
-              sx={{ mr: 1 }}
-            />
-          <Typography variant="h6">
-            {model.tags?.customDeviceName || 'Unnamed Device'}
-          </Typography>
-          {/* Switch positioned at top-right corner */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={isOn || false}
-                onChange={toggleDevice}
-                color="primary"
-                disabled={!model.connected?.value}
-              />
-            }
-            label=""
-          />
-        </Box>
-        <Typography variant="body2" color="text.secondary">
-          Device ID: {id}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Status: {model.connected?.value ? 'Online' : 'Offline'}
-        </Typography>
-
-        {/* Slider for 'v' state, with conditional rendering */}
-        {typeof sliderValue === 'number' && (
-          <Box mt={2}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Brightness
-            </Typography>
-            <Slider
-              value={sliderValue}
-              onChange={handleSliderChange}
-              min={0}
-              max={1} // Adjust max value based on expected range for 'v'
-              step={0.1}
-              color="primary"
-              aria-labelledby="intensity-slider"
             />
           </Box>
-        )}
-      </CardContent>
-    </Card>
+          <Typography variant="body2" color="text.secondary">
+            Device ID: {id}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Status: {model.connected?.value ? 'Online' : 'Offline'}
+          </Typography>
+
+          {/* Slider for 'v' state, with conditional rendering */}
+          {typeof sliderValue === 'number' && (
+            <Box mt={2}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Brightness
+              </Typography>
+              <Slider
+                value={sliderValue}
+                onChange={handleSliderChange}
+                min={0}
+                max={1} // Adjust max value based on expected range for 'v'
+                step={0.1}
+                color="primary"
+                aria-labelledby="intensity-slider"
+              />
+            </Box>
+          )}
+        </CardContent>
+      </Card>
+    </Box>
   );
 }

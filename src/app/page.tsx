@@ -109,7 +109,7 @@ export default function Home() {
     <Container maxWidth="md">
       <Box
         sx={{
-          my: 4,
+          py: 4,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -147,7 +147,7 @@ export default function Home() {
             </Typography>
 
             {/* Display Grant Status */}
-            <Box mt={2}>
+            <Box pt={2}>
               <Typography variant="body2">
                 Grant Status:{" "}
                 {loadingGrant ? "Checking..." : grantStatus === "active" ? "Active" : "Needs Renewal"}
@@ -156,7 +156,7 @@ export default function Home() {
 
             <DeviceList selectedDevices={selectedDevices} onSelectionChange={handleSelectionChange}/>
 
-            <Box sx={{ width: '100%', mt: 4 }}>
+            <Box sx={{ width: '100%', pt: 4 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Typography variant="h5" gutterBottom>
                   Custom Patterns

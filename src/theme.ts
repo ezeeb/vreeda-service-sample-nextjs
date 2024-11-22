@@ -44,6 +44,9 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
+        html: {
+          backgroundColor: '#000000',
+        },
         body: {
           background: 'linear-gradient(to bottom, #000000, #370427)',
           minHeight: '100vh',
