@@ -21,12 +21,15 @@ import UserContext from '@/models/UserContext';
  */
 export async function GET(req: NextRequest) {
   try {
+    // Get base URL for redirects (ngrok-aware)
+    const baseUrl = process.env.NEXTAUTH_URL || req.url;
+
     // Check user authentication
     const session: Session | null = await getServerSession(authOptions);
     if (!session) {
       console.error('OAuth2 callback: No session found');
       return NextResponse.redirect(
-        new URL('/api/auth/signin', req.url)
+        new URL('/api/auth/signin', baseUrl)
       );
     }
 
@@ -50,7 +53,7 @@ export async function GET(req: NextRequest) {
     if (error) {
       console.error('OAuth2 callback error:', error, errorDescription);
       return NextResponse.redirect(
-        new URL(`/?error=${error}&error_description=${errorDescription}`, req.url)
+        new URL(`/?error=${error}&error_description=${errorDescription}`, baseUrl)
       );
     }
 
@@ -101,12 +104,12 @@ export async function GET(req: NextRequest) {
     );
 
     // Redirect to home page
-    return NextResponse.redirect(new URL('/', req.url));
+    return NextResponse.redirect(new URL('/', baseUrl));
 
   } catch (error) {
     console.error('OAuth2 callback failed:', error instanceof Error ? error.message : String(error));
     return NextResponse.redirect(
-      new URL('/?error=oauth_callback_failed', req.url)
+      new URL('/?error=oauth_callback_failed', baseUrl)
     );
   }
 }

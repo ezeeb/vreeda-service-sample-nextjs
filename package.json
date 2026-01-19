@@ -4,12 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "yarn run start-docker && next dev --experimental-https",
+    "dev:ngrok": "yarn run start-docker && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "start-docker": "docker compose up -d",
     "stop-docker": "docker compose stop",
-    "remove-docker": "docker compose down"
+    "remove-docker": "docker compose down",
+    "ngrok": "ngrok http 3000",
+    "ngrok:status": "curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'",
+    "ngrok:open": "open http://localhost:4040",
+    "ngrok:update-env": "./update-ngrok-url.sh"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
