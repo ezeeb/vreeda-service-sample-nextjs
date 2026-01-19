@@ -68,7 +68,7 @@ export default function Home() {
   const checkGrantStatus = async () => {
     setLoadingGrant(true);
     try {
-      const response = await fetch(`/api/user/granted`);
+      const response = await fetch(`/api/consent/granted`);
       if (!response.ok) {
         throw new Error("Failed to check grant status");
       }
@@ -85,13 +85,14 @@ export default function Home() {
   const revokeGrant = async () => {
     if (!session?.user?.email) return;
     try {
-      const response = await fetch(`/api/user/revoke`, {
+      const response = await fetch(`/api/consent/revoke`, {
         method: "DELETE",
       });
       if (!response.ok) {
         throw new Error("Failed to revoke grant");
       }
-      await logoutAzureB2C(); // Log out after revoking the grant
+      // After revoking, update grant status (user stays logged in to Azure B2C)
+      await checkGrantStatus();
     } catch (error) {
       console.error("Error revoking grant:", error);
     }
@@ -147,23 +148,64 @@ export default function Home() {
             </Typography>
 
             {/* Display Grant Status */}
-            <Box pt={2}>
-              <Typography variant="body2">
-                Grant Status:{" "}
-                {loadingGrant ? "Checking..." : grantStatus === "active" ? "Active" : "Needs Renewal"}
-              </Typography>
+            <Box pt={2} pb={2}>
+              {loadingGrant ? (
+                <Typography variant="body2">Checking grant status...</Typography>
+              ) : grantStatus === "active" ? (
+                <Box sx={{
+                  p: 2,
+                  bgcolor: 'success.light',
+                  borderRadius: 1,
+                  color: 'success.contrastText'
+                }}>
+                  <Typography variant="body1" fontWeight="bold">
+                    ✓ Connected to VREEDA Devices
+                  </Typography>
+                  <Typography variant="caption">
+                    You can control your devices below
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{
+                  p: 2,
+                  bgcolor: 'warning.light',
+                  borderRadius: 1,
+                  color: 'warning.contrastText',
+                  textAlign: 'center'
+                }}>
+                  <Typography variant="body1" fontWeight="bold" gutterBottom>
+                    Device Access Required
+                  </Typography>
+                  <Typography variant="caption" gutterBottom display="block">
+                    Connect your VREEDA devices to use this service
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    sx={{ mt: 2 }}
+                    onClick={() => window.location.href = '/api/consent/authorize'}
+                  >
+                    Connect Devices
+                  </Button>
+                </Box>
+              )}
             </Box>
 
-            <DeviceList selectedDevices={selectedDevices} onSelectionChange={handleSelectionChange}/>
+            {/* Only show device controls when grant is active */}
+            {grantStatus === "active" && (
+              <>
+                <DeviceList selectedDevices={selectedDevices} onSelectionChange={handleSelectionChange}/>
 
-            <Box sx={{ width: '100%', pt: 4 }}>
-              <Box display="flex" alignItems="center" justifyContent="space-between">
-                <Typography variant="h5" gutterBottom>
-                  Custom Patterns
-                </Typography>
-              </Box>
-              <CustomPatternControl selectedDevices={selectedDevices}/>
-            </Box>
+                <Box sx={{ width: '100%', pt: 4 }}>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="h5" gutterBottom>
+                      Custom Patterns
+                    </Typography>
+                  </Box>
+                  <CustomPatternControl selectedDevices={selectedDevices}/>
+                </Box>
+              </>
+            )}
           </>
         ) : (
           <>

@@ -13,13 +13,14 @@ interface MongooseCache {
 
 // Declare a global cache variable for reusing the connection
 declare global {
-  const mongoose: MongooseCache | undefined;
+  // eslint-disable-next-line no-var
+  var mongoose: MongooseCache | undefined;
 }
 
-let cached = global.mongoose;
+const cached = global.mongoose || { conn: null, promise: null };
 
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+if (!global.mongoose) {
+  global.mongoose = cached;
 }
 
 async function connectToDatabase(): Promise<mongoose.Connection> {

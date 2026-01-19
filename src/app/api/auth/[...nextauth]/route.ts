@@ -1,12 +1,11 @@
 import connectToDatabase from "@/lib/mongodb"
 import UserContext from "@/models/UserContext"
-import NextAuth, { AuthOptions } from "next-auth"
-
+import NextAuth from "next-auth"
 import AzureADB2CProvider from "next-auth/providers/azure-ad-b2c";
 
-export const authOptions: AuthOptions = {
+export const authOptions = {
     session: {
-        strategy: "jwt",
+        strategy: "jwt" as const,
     },
     providers: [
         AzureADB2CProvider({
@@ -31,60 +30,53 @@ export const authOptions: AuthOptions = {
         }),
     ],
     callbacks: {
-        async jwt({ token, account, profile }) {
-          //console.log("jwt callback: ", token, account, profile)
-          if (account) {
-            token.id = profile.id
-            token.accessToken = account.access_token;
-          }
-          return token;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async jwt({ token, account, profile }: any) {
+            if (account) {
+                token.id = profile.id;
+                // Store ID Token for ConsentService OAuth2 flow (id_token_hint parameter)
+                token.idToken = account.id_token;
+                // Store Refresh Token for session refresh
+                token.refreshToken = account.refresh_token;
+            }
+            return token;
         },
-        async session({ session, token }) {
-          //console.log("session callback: ", session, token)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async session({ session, token }: any) {
+            // Add ID Token to session for OAuth2 flow
+            session.idToken = token.idToken;
+            session.user.id = token.sub;
 
-          session.accessToken = token.accessToken;
-          session.user.id = token.sub
-    
-          return session;
+            return session;
         },
-      },
+    },
     events: {
-      async signIn({user, account, profile}) {
-        //console.log("signIn callback: ", user, account, profile)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async signIn({ user }: any) {
+            // Connect to MongoDB
+            await connectToDatabase();
 
-        //Connect to MongoDB
-        await connectToDatabase();
-    
-        // Create or update the UserContext
-        if (user && user?.id) {
-          try {
-            const updatedContext = await UserContext.findOneAndUpdate(
-              { userId: user.id }, // Match user by email
-              {
-                userId: user.id,
-                apiAccessTokens: {
-                  accessToken: account.access_token || "",
-                  refreshToken: account.refresh_token || "",
-                  accessTokenExpiration: account.expires_at
-                    ? new Date(account.expires_at * 1000)
-                    : undefined,
-                  refreshTokenExpiration: account.refresh_token_expires_in
-                    ? new Date(Date.now() + account.refresh_token_expires_in * 1000)
-                    : undefined,
-                },
-                updatedAt: new Date(),
-              },
-              { upsert: true, new: true }
-            );
-            //console.log("UserContext created/updated:", updatedContext);
-          } catch (error) {
-            console.error("Error updating UserContext:", error);
-          }
+            // Create UserContext if it doesn't exist (without tokens)
+            // Tokens will be stored via OAuth2 flow in /api/consent/callback
+            if (user?.id) {
+                try {
+                    await UserContext.findOneAndUpdate(
+                        { userId: user.id },
+                        {
+                            userId: user.id,
+                            updatedAt: new Date(),
+                        },
+                        { upsert: true, new: true }
+                    );
+                } catch (error) {
+                    console.error("[NextAuth] Error updating UserContext:", error);
+                }
+            }
         }
-      }
     },
     secret: process.env.NEXTAUTH_SECRET,
 };
 
+// @ts-expect-error - next-auth v4 compatibility with Next.js 15
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

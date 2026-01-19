@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import UserContext from "@/models/UserContext";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
@@ -6,7 +7,7 @@ import { getServerSession } from 'next-auth/next';
 import { Session } from 'next-auth';
 
 // Handle GET and POST requests
-export async function GET(req: NextRequest) {
+export async function GET() {
   const session: Session | null = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

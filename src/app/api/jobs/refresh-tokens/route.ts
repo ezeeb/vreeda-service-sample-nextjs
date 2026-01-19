@@ -1,16 +1,7 @@
 import connectToDatabase from "@/lib/mongodb";
 import UserContext from "@/models/UserContext";
 import { NextResponse } from "next/server";
-
-export interface AzureB2CRefreshResponse {
-  access_token: string; // The new access token
-  refresh_token: string; // The new refresh token (optional, may not always be returned)
-  expires_in: number; // Expiration time for the access token, in seconds
-  refresh_token_expires_in?: number; // Expiration time for the refresh token, in seconds (optional)
-  id_token?: string; // New ID token, if requested
-  scope?: string; // The scopes associated with the tokens
-  token_type: string; // Type of the token, typically "Bearer"
-}
+import { createOAuth2Client } from "@/lib/oauth2Client";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -21,62 +12,56 @@ export async function GET(req: Request) {
   }
 
   try {
-    console.log("Token refresh job triggered...");
     await connectToDatabase();
 
+    // Refresh tokens expiring in the next 2 minutes
+    // (ConsentService tokens have 5 minute lifetime)
     const threshold = new Date();
-    threshold.setMinutes(threshold.getMinutes() + 5); // Refresh tokens expiring in the next 5 minutes
+    threshold.setMinutes(threshold.getMinutes() + 2);
 
     const usersToRefresh = await UserContext.find({
       "apiAccessTokens.accessTokenExpiration": { $lt: threshold },
     });
 
+    // Create OAuth2 client for ConsentService
+    const oauth2Client = createOAuth2Client();
+
     for (const user of usersToRefresh) {
       try {
-        // Call Azure AD B2C to refresh the token
-        const response = await fetch(
-          `https://${process.env.AZURE_AD_B2C_TENANT_NAME}.b2clogin.com/${process.env.AZURE_AD_B2C_TENANT_NAME}.onmicrosoft.com/${process.env.AZURE_AD_B2C_PRIMARY_USER_FLOW}/oauth2/v2.0/token`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-              client_id: process.env.AZURE_AD_B2C_CLIENT_ID!,
-              client_secret: process.env.AZURE_AD_B2C_CLIENT_SECRET!,
-              grant_type: "refresh_token",
-              refresh_token: user.apiAccessTokens.refreshToken,
-            }).toString(),
-          }
-        );
-
-        if (!response.ok) {
-          console.error(`Failed to refresh token for user ${user.userId}`);
+        // Skip if refresh token is missing
+        if (!user.apiAccessTokens?.refreshToken) {
+          console.warn(`Token refresh: No refresh token for user ${user.userId}, skipping`);
           continue;
         }
 
-        const data = await response.json() as AzureB2CRefreshResponse;
+        // Call ConsentService to refresh the token
+        const tokenResponse = await oauth2Client.refreshAccessToken(
+          user.apiAccessTokens.refreshToken
+        );
+
+        // Calculate new token expiration times
+        const accessTokenExpiration = new Date(Date.now() + tokenResponse.expires_in * 1000);
+        // Refresh token lifetime: 30 days (TPS Integration Guide)
+        const refreshTokenExpiration = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
         // Update the user context with new tokens
+        // IMPORTANT: ConsentService rotates refresh tokens (old token is invalidated)
         await UserContext.findByIdAndUpdate(user._id, {
           $set: {
-            "apiAccessTokens.accessToken": data.access_token,
-            "apiAccessTokens.refreshToken": data.refresh_token || user.apiAccessTokens.refreshToken, // Keep old one if not provided
-            "apiAccessTokens.accessTokenExpiration": new Date(
-              Date.now() + data.expires_in * 1000
-            ),
-            "apiAccessTokens.refreshTokenExpiration": new Date(Date.now() + data.refresh_token_expires_in * 1000)|| user.apiAccessTokens.refreshTokenExpiration, // Update if necessary
+            "apiAccessTokens.accessToken": tokenResponse.access_token,
+            "apiAccessTokens.refreshToken": tokenResponse.refresh_token, // New refresh token!
+            "apiAccessTokens.accessTokenExpiration": accessTokenExpiration,
+            "apiAccessTokens.refreshTokenExpiration": refreshTokenExpiration,
           },
           $currentDate: { updatedAt: true },
         });
-
-        console.log(`Successfully refreshed token for user ${user.userId}`);
       } catch (error) {
-        console.error(`Error refreshing token for user ${user.userId}`, error);
+        console.error(`Token refresh failed for user ${user.userId}:`, error instanceof Error ? error.message : String(error));
       }
     }
-    console.log("Token refresh job completed successfully.");
     return NextResponse.json({ success: true, message: "Token refresh completed successfully." });
   } catch (error) {
-    console.error("Error in token refresh job:", error);
+    console.error("Token refresh job failed:", error instanceof Error ? error.message : String(error));
     return NextResponse.json({ success: false, message: "Failed to refresh tokens." }, { status: 500 });
   }
 }
