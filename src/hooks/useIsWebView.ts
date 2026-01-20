@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-
 /**
  * WebView Detection Hook
  *
- * Detects if the app is running in the Vreeda WebView.
- * The app sets window.isVreedaWebView = true on load.
+ * Detects if the app is running in the Vreeda WebView by checking:
+ * 1. Cookie set by middleware (works server-side and client-side)
+ * 2. Fallback to window.isVreedaWebView (set by app)
+ *
+ * The middleware sets a cookie when Authorization: Bearer header is present,
+ * which indicates WebView mode (vs Browser mode using NextAuth cookies).
+ *
+ * This hook directly reads without using state, avoiding re-renders.
  *
  * @returns boolean - Is it WebView mode?
  *
@@ -24,15 +28,19 @@ import { useEffect, useState } from 'react';
  * ```
  */
 export function useIsWebView(): boolean {
-  const [isWebView, setIsWebView] = useState(false);
+  if (typeof window === 'undefined') {
+    return false;
+  }
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.isVreedaWebView === true) {
-      setIsWebView(true);
-    }
-  }, []);
+  // Check cookie first (set by middleware based on Authorization header)
+  const cookies = document.cookie.split(';');
+  const webViewCookie = cookies.find(c => c.trim().startsWith('x-vreeda-webview='));
+  if (webViewCookie) {
+    return webViewCookie.split('=')[1] === 'true';
+  }
 
-  return isWebView;
+  // Fallback to window property (for backward compatibility)
+  return window.isVreedaWebView === true;
 }
 
 // TypeScript extension for window.isVreedaWebView

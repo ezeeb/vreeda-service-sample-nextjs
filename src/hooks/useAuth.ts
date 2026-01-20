@@ -37,7 +37,6 @@ export function useAuth() {
   return {
     user,
     isAuthenticated,
-    isLoading,
-    isWebView, // For UI-specific adjustments (e.g., hide Logout button)
+    isLoading
   };
 }

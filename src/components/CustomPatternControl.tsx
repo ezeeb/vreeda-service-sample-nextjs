@@ -2,8 +2,15 @@ import { DeviceRequestModel } from "@/types/vreedaApi";
 import { Box, Button, Card, CardContent, Link, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 
-export default function CustomPatternControl({selectedDevices}: {selectedDevices: string[]}) {
+interface CustomPatternControlProps {
+    selectedDevices: string[];
+    grantStatus: "active" | "needs renewal" | null;
+}
+
+export default function CustomPatternControl({selectedDevices, grantStatus}: CustomPatternControlProps) {
     const [pattern, setPattern] = useState("type:football|f:3|x:9.3|r:0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.7,1.0,0;0.2,0,0;0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.2,1.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.2,1.0,0;0.3,0,1.0;0.1,1.0,0;0.2,0,1.0;0.4,1.0,0;0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.7,1.0,0;0.3,0,1.0;0.1,1.0,0;0.2,0,1.0;0.4,1.0,0;0.2,0,1.0;0.9,1.0,0;2,0,0|g:0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.2,0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,1.0;0.1,1.0,0;0.2,0,1.0;0.4,1.0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.2,0,0.0;0.9,0.0,0;2,0,0|b:0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.2,0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,0.0235;0.1,0.0235,0;0.2,0,0.0235;0.4,0.0235,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.2,0,0.0;0.9,0.0,0;2,0,0|c:0.1,0,0;0.1,0,0.15;0.3,0.15,0;0.5,0,0;0.2,0,0;0.2,0,0;0.1,0,0.15;0.2,0.15,0;0.4,0,0;0.1,0,0.15;0.2,0.15,0;0.3,0,0;0.2,0,0;0.1,0,0.15;0.2,0.15,0;0.4,0,0;0.1,0,0.15;0.2,0.15,0;0.3,0,0;0.1,0,0;0.1,0,0.15;0.3,0.15,0;0.5,0,0;0.4,0,0;0.1,0,0.15;0.2,0.15,0;0.3,0,0;1.1,0,0;2,0,0");
+
+    const isGrantActive = grantStatus === "active";
 
     const handleRunClicked = async () => {
         console.log("patching devices: ", selectedDevices);
@@ -67,6 +74,7 @@ export default function CustomPatternControl({selectedDevices}: {selectedDevices
                             variant="contained"
                             color="primary"
                             onClick={handleRunClicked}
+                            disabled={!isGrantActive}
                         >
                             Run
                         </Button>
