@@ -15,6 +15,7 @@ interface DeviceListProps {
   onReload: () => void;
   reloading: boolean;
   onRevokeGrant: () => void;
+  isWebView: boolean;
 }
 
 export default function DeviceList({
@@ -27,7 +28,8 @@ export default function DeviceList({
   error,
   onReload,
   reloading,
-  onRevokeGrant
+  onRevokeGrant,
+  isWebView
 }: DeviceListProps) {
 
   return (
@@ -41,12 +43,20 @@ export default function DeviceList({
           gap: { xs: 2, sm: 0 }
         }}
       >
-        <Typography variant="h5" gutterBottom>
-          Devices
-        </Typography>
-        {/* Show Revoke button and Reload only when grant is active */}
-        {grantStatus === "active" && (
-          <Box display="flex" gap={1} alignItems="center">
+        <Box display="flex" gap={1} alignItems="center">
+          <Typography variant="h5" gutterBottom>
+            Devices
+          </Typography>
+
+          {/* In WebView mode: show Reload button right next to title */}
+          {grantStatus === "active" && isWebView && (
+            <IconButton onClick={onReload} disabled={reloading}>
+              {reloading ? <CircularProgress size={24} /> : <RefreshIcon />}
+            </IconButton>
+          )}
+
+          {/* Show Revoke button only in Browser mode when grant is active */}
+          {grantStatus === "active" && !isWebView && (
             <Button
               variant="outlined"
               color="error"
@@ -59,10 +69,14 @@ export default function DeviceList({
             >
               Revoke Device Access
             </Button>
-            <IconButton onClick={onReload} disabled={reloading}>
-              {reloading ? <CircularProgress size={24} /> : <RefreshIcon />}
-            </IconButton>
-          </Box>
+          )}
+        </Box>
+
+        {/* In Browser mode: show Reload button on the right side */}
+        {grantStatus === "active" && !isWebView && (
+          <IconButton onClick={onReload} disabled={reloading}>
+            {reloading ? <CircularProgress size={24} /> : <RefreshIcon />}
+          </IconButton>
         )}
       </Box>
 

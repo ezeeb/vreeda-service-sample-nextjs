@@ -4,12 +4,15 @@ import UserContext from "@/models/UserContext";
 import { createOAuth2Client } from "@/lib/oauth2Client";
 import { getUserId } from "@/lib/auth";
 
-export async function DELETE(req: Request) {
+/**
+ * Revoke OAuth2 consent and delete user tokens
+ */
+export async function GET(req: Request) {
   const userId = await getUserId(req);
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
   try {
     await connectToDatabase();
 

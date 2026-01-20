@@ -90,6 +90,27 @@ export class OAuth2Client {
   }
 
   /**
+   * Build authorization URL for WebView Mode
+   * @param state - Random state for CSRF protection
+   * @param pkce - PKCE challenge
+   * @returns Authorization URL (without id_token_hint - token comes via Authorization header)
+   */
+  getAuthorizationUrlForWebView(state: string, pkce: PKCEChallenge): string {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: this.config.clientId,
+      redirect_uri: this.config.redirectUri,
+      scope: this.config.scopes.join(' '),
+      state,
+      code_challenge: pkce.codeChallenge,
+      code_challenge_method: pkce.codeChallengeMethod,
+      // NO id_token_hint - token comes via Authorization: Bearer header from InAppBrowser
+    });
+
+    return `${this.config.consentServiceUrl}/connect/authorize?${params}`;
+  }
+
+  /**
    * Exchange authorization code for access and refresh tokens
    * @param code - Authorization code from callback
    * @param codeVerifier - PKCE code verifier

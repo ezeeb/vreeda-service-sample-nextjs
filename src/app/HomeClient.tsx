@@ -119,7 +119,7 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
     setLoadingGrant(true);
     try {
       const response = await fetch(`/api/consent/revoke`, {
-        method: "DELETE",
+        method: "GET",
       });
       if (!response.ok) {
         throw new Error("Failed to revoke grant");
@@ -199,6 +199,7 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
               onReload={handleReloadDevices}
               reloading={reloadingDevices}
               onRevokeGrant={revokeGrant}
+              isWebView={isWebView}
             />
 
             {/* Custom Patterns - always visible, Run button disabled without grant */}

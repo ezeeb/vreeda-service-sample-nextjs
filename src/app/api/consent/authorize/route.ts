@@ -10,15 +10,23 @@ import { getUserId } from "@/lib/auth";
  * OAuth2 Authorization Endpoint
  * Initiates the OAuth2 Authorization Code Flow with PKCE
  *
+ * Supports two authentication modes:
+ * 1. Browser Mode:
+ *    - NextAuth session provides ID token
+ *    - Redirects to ConsentService with id_token_hint query parameter
+ * 2. WebView Mode:
+ *    - Authorization: Bearer header provides ID token (set by app)
+ *    - Redirects to ConsentService with id_token_hint query parameter
+ *
+ * Both modes work identically (redirect to ConsentService with id_token_hint).
+ * Only authentication source differs (session vs. bearer token).
+ *
  * Flow:
  * 1. Check user authentication (NextAuth session or Bearer token)
- * 2. Extract ID Token from session (required for OAuth2 consent flow)
+ * 2. Extract ID Token
  * 3. Generate PKCE challenge + random state
- * 4. Store code verifier in MongoDB (via PKCE store)
- * 5. Redirect user to ConsentService /connect/authorize
- *
- * Note: This endpoint requires a NextAuth session with ID token.
- * WebView mode with Bearer token alone is insufficient for OAuth2 consent flow.
+ * 4. Store code verifier in MongoDB
+ * 5. Redirect to ConsentService authorization URL with id_token_hint
  */
 export async function GET(req: Request) {
   try {
@@ -31,13 +39,24 @@ export async function GET(req: Request) {
       );
     }
 
-    // Extract ID Token from session (required for OAuth2 flow)
-    // Note: Bearer tokens don't provide ID tokens, so OAuth2 flow requires session
-    const session: Session | null = await getServerSession(authOptions);
-    const idToken = (session as Session & { idToken?: string })?.idToken;
+    // Extract ID Token
+    // Priority 1: Bearer Token (WebView Mode - the Bearer token IS the ID token)
+    // Priority 2: NextAuth Session (Browser Mode)
+    let idToken: string | null = null;
+
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      // WebView Mode: Bearer token is the ID token from Azure B2C
+      idToken = authHeader.substring(7);
+    } else {
+      // Browser Mode: Get ID token from session
+      const session: Session | null = await getServerSession(authOptions);
+      idToken = (session as Session & { idToken?: string })?.idToken || null;
+    }
+
     if (!idToken) {
       return NextResponse.json(
-        { error: "ID Token not found in session. OAuth2 consent flow requires browser-based login." },
+        { error: "ID Token not found. Please authenticate with Azure B2C." },
         { status: 400 }
       );
     }
@@ -51,10 +70,10 @@ export async function GET(req: Request) {
     // Store PKCE code verifier in MongoDB (returns random state value)
     const state = await storePKCEVerifier(pkce.codeVerifier);
 
-    // Build authorization URL with id_token_hint query parameter
+    // Build authorization URL with id_token_hint and redirect
+    // Both Browser and WebView modes use id_token_hint query parameter
     const authorizationUrl = oauth2Client.getAuthorizationUrl(idToken, state, pkce);
 
-    // Redirect user to ConsentService
     return NextResponse.redirect(authorizationUrl);
 
   } catch (error) {

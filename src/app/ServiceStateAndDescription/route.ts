@@ -85,13 +85,13 @@ export async function GET(req: Request) {
         title: "Vreeda Sample Service (Next.js)",
         descriptionText: "Sample third-party service demonstrating OAuth2 device access integration with Vreeda IoT ecosystem.",
         descriptionLogo: "/logo.png", // Relative URL - app will resolve against service base URL
-        descriptionHtmlFragment: undefined, // Optional: URL to HTML fragment for service description
+        descriptionHtmlFragment: "/description_html_fragment.html", // Optional: URL to HTML fragment for service description
         homeUrl: "/", // Relative URL
-        getAccessGrantUrl: "/api/consent/authorize", // Initiates OAuth2 flow
-        accessGrantUrl: undefined, // Deprecated - use getAccessGrantUrl
-        redirectUrl: "/", // Where to redirect after grant
+        accessGrantUrl: "/api/consent/authorize", // Deprecated - use getAccessGrantUrl
+        getAccessGrantUrl: "/api/consent/authorize", // Returns authorization URI for InAppBrowser
+        redirectUrl: "/consent-success", // Final redirect URL after successful consent (WebView waits for this)
         revokeGrantUrl: "/api/consent/revoke", // Revoke grant endpoint
-        secureGrant: true, // Uses OAuth2 with PKCE
+        secureGrant: false, // Uses OAuth2 with PKCE
       },
       state: {
         authenticated: true, // User is authenticated (has valid Bearer token from app)

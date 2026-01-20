@@ -15,7 +15,7 @@ import { getUserId } from "@/lib/auth";
  * 3. Exchange authorization code for access + refresh tokens
  * 4. Store tokens in UserContext (MongoDB)
  * 5. PKCE state is automatically deleted by retrievePKCEVerifier
- * 6. Redirect user to home page
+ * 6. Redirect to home page (App detects homeUrl and navigates to Home Screen)
  *
  * Note: This endpoint is part of the OAuth2 browser flow and typically
  * requires a NextAuth session. Bearer token authentication is supported
@@ -98,6 +98,8 @@ export async function GET(req: NextRequest) {
     );
 
     // Redirect to home page
+    // - Browser Mode: Shows home page with granted access
+    // - WebView Mode: App detects homeUrl redirect and navigates to Home Screen
     return NextResponse.redirect(new URL('/', baseUrl));
 
   } catch (error) {
