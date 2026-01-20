@@ -1,20 +1,13 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import UserContext from "@/models/UserContext";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getServerSession } from 'next-auth/next';
-import { Session } from 'next-auth';
 import { createOAuth2Client } from "@/lib/oauth2Client";
+import { getUserId } from "@/lib/auth";
 
-export async function DELETE() {
-  const session: Session | null = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = session.user.id; // Extract user ID
+export async function DELETE(req: Request) {
+  const userId = await getUserId(req);
   if (!userId) {
-    return NextResponse.json({ error: "User ID not found in session" }, { status: 400 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   
   try {

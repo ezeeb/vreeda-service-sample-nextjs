@@ -1,6 +1,11 @@
 # docker-compose.yml
 name: vreeda-service-sample-nextjs
 
+# Usage:
+# - Development (HTTP):  docker-compose up
+# - Production (HTTPS):  REFRESH_URL="https://host.docker.internal:3000/api/jobs/refresh-tokens?key=your-secure-key" docker-compose up
+# - Or set REFRESH_URL in .env file
+
 services:
   mongodb:
     image: mongo:latest
@@ -16,11 +21,14 @@ services:
   token-refresh-task:
     image: curlimages/curl:7.87.0
     container_name: token-refresh-task
+    environment:
+      - REFRESH_URL=${REFRESH_URL:-http://host.docker.internal:3000/api/jobs/refresh-tokens?key=your-secure-key}
     entrypoint: >
       /bin/sh -c "
       while true; do
         sleep 60;
-        curl -k -X GET https://host.docker.internal:3000/api/jobs/refresh-tokens?key=your-secure-key;
+        echo \"[Token Refresh] Calling: $$REFRESH_URL\";
+        curl -f -k -X GET \"$$REFRESH_URL\" && echo \" -> Success\" || echo \" -> Failed\";
       done
       "
 

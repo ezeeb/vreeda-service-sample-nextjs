@@ -4,6 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from '@/theme';
 import { NextAuthProvider } from "@/app/providers";
+import WebViewPolyfillInitializer from '@/components/WebViewPolyfillInitializer';
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   return (
@@ -12,6 +13,7 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body>
+        <WebViewPolyfillInitializer />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <ThemeProvider theme={theme}>
             <CssBaseline />

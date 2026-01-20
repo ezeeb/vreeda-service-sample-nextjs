@@ -1,21 +1,13 @@
-import { getServerSession } from 'next-auth/next';
 import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '../../auth/[...nextauth]/route';
 import { DeviceRequestModel, DevicesResponse } from "@/types/vreedaApi";
 import { patchDevice } from '@/lib/vreedaApiClient'; // Replace with your API client path
-import { Session } from 'next-auth';
 import UserContext from "@/models/UserContext";
+import { getUserId } from "@/lib/auth";
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
-  const session: Session | null = await getServerSession(authOptions);
-
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const userId = session.user.id; // Extract user ID
+  const userId = await getUserId(req);
   if (!userId) {
-    return NextResponse.json({ error: "User ID not found in session" }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {

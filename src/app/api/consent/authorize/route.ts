@@ -1,37 +1,43 @@
 import { NextResponse } from "next/server";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth-config";
 import { getServerSession } from 'next-auth/next';
 import { Session } from 'next-auth';
 import { createOAuth2Client } from '@/lib/oauth2Client';
 import { storePKCEVerifier } from '@/lib/pkceStore';
+import { getUserId } from "@/lib/auth";
 
 /**
  * OAuth2 Authorization Endpoint
  * Initiates the OAuth2 Authorization Code Flow with PKCE
  *
  * Flow:
- * 1. Check user authentication (NextAuth session)
- * 2. Extract ID Token from session
+ * 1. Check user authentication (NextAuth session or Bearer token)
+ * 2. Extract ID Token from session (required for OAuth2 consent flow)
  * 3. Generate PKCE challenge + random state
  * 4. Store code verifier in MongoDB (via PKCE store)
  * 5. Redirect user to ConsentService /connect/authorize
+ *
+ * Note: This endpoint requires a NextAuth session with ID token.
+ * WebView mode with Bearer token alone is insufficient for OAuth2 consent flow.
  */
-export async function GET() {
+export async function GET(req: Request) {
   try {
     // Check user authentication
-    const session: Session | null = await getServerSession(authOptions);
-    if (!session) {
+    const userId = await getUserId(req);
+    if (!userId) {
       return NextResponse.json(
         { error: "Unauthorized - Please login first" },
         { status: 401 }
       );
     }
 
-    // Extract ID Token from session (stored by NextAuth callbacks)
-    const idToken = (session as Session & { idToken?: string }).idToken;
+    // Extract ID Token from session (required for OAuth2 flow)
+    // Note: Bearer tokens don't provide ID tokens, so OAuth2 flow requires session
+    const session: Session | null = await getServerSession(authOptions);
+    const idToken = (session as Session & { idToken?: string })?.idToken;
     if (!idToken) {
       return NextResponse.json(
-        { error: "ID Token not found in session" },
+        { error: "ID Token not found in session. OAuth2 consent flow requires browser-based login." },
         { status: 400 }
       );
     }

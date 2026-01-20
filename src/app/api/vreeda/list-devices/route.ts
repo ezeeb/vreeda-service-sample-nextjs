@@ -1,20 +1,12 @@
-import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
 import { listDevices } from '@/lib/vreedaApiClient'; // Replace with your actual utility import
-import { authOptions } from '../../auth/[...nextauth]/route';
-import { Session } from 'next-auth';
 import UserContext from "@/models/UserContext";
-  
-export async function GET() {
-  const session: Session | null = await getServerSession(authOptions);
+import { getUserId } from "@/lib/auth";
 
-  if (!session) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const userId = session.user.id; // Extract user ID
+export async function GET(req: Request) {
+  const userId = await getUserId(req);
   if (!userId) {
-    return NextResponse.json({ error: "User ID not found in session" }, { status: 400 });
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {

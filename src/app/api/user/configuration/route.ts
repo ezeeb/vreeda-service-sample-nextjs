@@ -2,20 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import UserContext from "@/models/UserContext";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getServerSession } from 'next-auth/next';
-import { Session } from 'next-auth';
+import { getUserId } from "@/lib/auth";
 
 // Handle GET and POST requests
-export async function GET() {
-  const session: Session | null = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = session.user.id; // Extract user ID
+export async function GET(req: Request) {
+  const userId = await getUserId(req);
   if (!userId) {
-    return NextResponse.json({ error: "User ID not found in session" }, { status: 400 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
@@ -34,14 +27,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session: Session | null = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = session.user.id; // Extract user ID
+  const userId = await getUserId(req);
   if (!userId) {
-    return NextResponse.json({ error: "User ID not found in session" }, { status: 400 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

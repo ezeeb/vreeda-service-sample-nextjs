@@ -2,17 +2,19 @@
 import * as React from 'react';
 import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
-import DeviceList from '@/components/DeviceList'; // Importieren Sie die DeviceList-Komponente
-import { signIn, signOut, useSession } from 'next-auth/react';
+import DeviceList from '@/components/DeviceList';
+import { signIn, signOut } from 'next-auth/react';
 import { Button, Typography } from '@mui/material';
 import { useEffect, useState } from 'react';
 import CustomPatternControl from '@/components/CustomPatternColtrol';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Home() {
-  const { data: session, status } = useSession(); // Session-Status abrufen
+  const { user, isAuthenticated, isLoading, isWebView } = useAuth();
+
   const [grantStatus, setGrantStatus] = useState<"active" | "needs renewal" | null>(null);
   const [loadingGrant, setLoadingGrant] = useState(false);
-  const [selectedDevices, setSelectedDevices] = useState<string[]>([]); 
+  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
 
   const fetchSelectedDevices = async () => {
     try {
@@ -25,9 +27,34 @@ export default function Home() {
     }
   };
 
+  const checkGrantStatus = async () => {
+    try {
+      const response = await fetch(`/api/consent/granted`);
+      if (!response.ok) {
+        throw new Error("Failed to check grant status");
+      }
+      const data = await response.json();
+      setGrantStatus(data.granted ? "active" : "needs renewal");
+    } catch (error) {
+      console.error("Error checking grant status:", error);
+      setGrantStatus("needs renewal");
+    }
+  };
+
+  // Load all data in parallel on mount (when authenticated)
   useEffect(() => {
-    fetchSelectedDevices();
-  }, []);
+    if (isAuthenticated) {
+      setLoadingGrant(true);
+
+      // Load in parallel for better performance
+      Promise.all([
+        fetchSelectedDevices(),
+        checkGrantStatus()
+      ]).finally(() => {
+        setLoadingGrant(false);
+      });
+    }
+  }, [isAuthenticated]);
 
   const handleSelectionChange = async (deviceId: string, isSelected: boolean) => {
     const updatedDevices = isSelected
@@ -58,32 +85,8 @@ export default function Home() {
     }
   };
 
-  // Check grant status on mount
-  useEffect(() => {
-    if (session) {
-      checkGrantStatus();
-    }
-  }, [session]);
-
-  const checkGrantStatus = async () => {
-    setLoadingGrant(true);
-    try {
-      const response = await fetch(`/api/consent/granted`);
-      if (!response.ok) {
-        throw new Error("Failed to check grant status");
-      }
-      const data = await response.json();
-      setGrantStatus(data.granted ? "active" : "needs renewal");
-    } catch (error) {
-      console.error("Error checking grant status:", error);
-      setGrantStatus("needs renewal");
-    } finally {
-      setLoadingGrant(false);
-    }
-  };
-
   const revokeGrant = async () => {
-    if (!session?.user?.email) return;
+    if (!isAuthenticated) return;
     try {
       const response = await fetch(`/api/consent/revoke`, {
         method: "DELETE",
@@ -91,7 +94,7 @@ export default function Home() {
       if (!response.ok) {
         throw new Error("Failed to revoke grant");
       }
-      // After revoking, update grant status (user stays logged in to Azure B2C)
+      // After revoking, update grant status
       await checkGrantStatus();
     } catch (error) {
       console.error("Error revoking grant:", error);
@@ -120,31 +123,34 @@ export default function Home() {
         <Typography variant="h4" gutterBottom>
           VREEDA Sample Service
         </Typography>
-        {status === 'loading' ? (
+        {isLoading ? (
           <Typography variant="body1">Loading...</Typography>
-        ) : session ? (
+        ) : isAuthenticated ? (
           <>
-            <Box
-              sx={{
-                position: "absolute",
-                top: 16,
-                right: 16,
-                display: "flex",
-                gap: 2,
-              }}
-            >
-              {/* Logout Button */}
-              <Button variant="outlined" color="primary" onClick={logoutAzureB2C}>
-                Logout
-              </Button>
-              {/* Revoke Button */}
-              <Button variant="contained" color="error" onClick={revokeGrant}>
-                Revoke
-              </Button>
-            </Box>
+            {/* Show Logout/Revoke buttons only in Browser mode */}
+            {!isWebView && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  display: "flex",
+                  gap: 2,
+                }}
+              >
+                {/* Logout Button */}
+                <Button variant="outlined" color="primary" onClick={logoutAzureB2C}>
+                  Logout
+                </Button>
+                {/* Revoke Button */}
+                <Button variant="contained" color="error" onClick={revokeGrant}>
+                  Revoke
+                </Button>
+              </Box>
+            )}
 
             <Typography variant="body1">
-              Welcome, {session.user?.name || "User"}!
+              Welcome, {user?.name || "User"}!
             </Typography>
 
             {/* Display Grant Status */}

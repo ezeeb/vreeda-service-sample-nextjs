@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/mongodb";
 import UserContext from "@/models/UserContext";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getServerSession } from 'next-auth/next';
-import { Session } from 'next-auth';
+import { getUserId } from "@/lib/auth";
 
-export async function GET() {
-  const session: Session | null = await getServerSession(authOptions);
-  if (!session) {
-    console.error('User granted check: No session found');
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = session.user.id;
+export async function GET(req: Request) {
+  const userId = await getUserId(req);
   if (!userId) {
-    console.error('User granted check: User ID not found in session');
-    return NextResponse.json({ error: "User ID not found in session" }, { status: 400 });
+    console.error('User granted check: No user ID found');
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {

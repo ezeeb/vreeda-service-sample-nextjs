@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getServerSession } from 'next-auth/next';
-import { Session } from 'next-auth';
 import { createOAuth2Client } from '@/lib/oauth2Client';
 import { retrievePKCEVerifier } from '@/lib/pkceStore';
 import connectToDatabase from '@/lib/mongodb';
 import UserContext from '@/models/UserContext';
+import { getUserId } from "@/lib/auth";
 
 /**
  * OAuth2 Callback Endpoint
@@ -18,27 +16,23 @@ import UserContext from '@/models/UserContext';
  * 4. Store tokens in UserContext (MongoDB)
  * 5. PKCE state is automatically deleted by retrievePKCEVerifier
  * 6. Redirect user to home page
+ *
+ * Note: This endpoint is part of the OAuth2 browser flow and typically
+ * requires a NextAuth session. Bearer token authentication is supported
+ * but unusual for callback scenarios.
  */
 export async function GET(req: NextRequest) {
+  // Get base URL for redirects (ngrok-aware)
+  const baseUrl = process.env.NEXTAUTH_URL || req.url;
+
   try {
-    // Get base URL for redirects (ngrok-aware)
-    const baseUrl = process.env.NEXTAUTH_URL || req.url;
 
     // Check user authentication
-    const session: Session | null = await getServerSession(authOptions);
-    if (!session) {
-      console.error('OAuth2 callback: No session found');
+    const userId = await getUserId(req);
+    if (!userId) {
+      console.error('OAuth2 callback: No user ID found');
       return NextResponse.redirect(
         new URL('/api/auth/signin', baseUrl)
-      );
-    }
-
-    const userId = session.user.id;
-    if (!userId) {
-      console.error('OAuth2 callback: User ID not found in session');
-      return NextResponse.json(
-        { error: "User ID not found in session" },
-        { status: 400 }
       );
     }
 
