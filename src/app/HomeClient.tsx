@@ -4,10 +4,11 @@ import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import DeviceList from '@/components/DeviceList';
 import { signIn, signOut } from 'next-auth/react';
-import { Button, CircularProgress, Typography } from '@mui/material';
+import { Button, CircularProgress, Typography, Alert } from '@mui/material';
 import { useEffect, useState } from 'react';
 import CustomPatternControl from '@/components/CustomPatternControl';
 import { useAuth } from '@/hooks/useAuth';
+import { useOAuth2Error } from '@/hooks/useOAuth2Error';
 import { DevicesResponse } from '@/types/vreedaApi';
 
 interface HomeClientProps {
@@ -17,6 +18,7 @@ interface HomeClientProps {
 
 export default function HomeClient({ isWebView, initialGrantStatus }: HomeClientProps) {
   const { isAuthenticated, isLoading } = useAuth();
+  const { oauth2Error, clearError } = useOAuth2Error();
 
   const [grantStatus, setGrantStatus] = useState<"active" | "needs renewal">(initialGrantStatus);
   const [loadingGrant, setLoadingGrant] = useState(false);
@@ -140,6 +142,37 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
   const logoutAzureB2C = async () => {
     await signOut();
   };
+
+  // OAuth2 error messages (user-friendly)
+  const oauth2ErrorMessages: Record<string, string> = {
+    'access_denied': 'You denied access to your devices. You can grant access again when ready.',
+    'invalid_grant': 'Authentication failed. Please log in and try again.',
+    'invalid_scope': 'The requested permissions are invalid. Please contact support.',
+    'server_error': 'The authorization server encountered an error. Please try again later.',
+  };
+
+  // Display OAuth2 error if present
+  if (oauth2Error) {
+    const userMessage = oauth2ErrorMessages[oauth2Error.error]
+      || oauth2Error.errorDescription
+      || 'An authorization error occurred.';
+
+    return (
+      <Container maxWidth="md">
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="h5" color="error" gutterBottom>
+            Authorization Error
+          </Typography>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {userMessage}
+          </Alert>
+          <Button variant="contained" onClick={clearError}>
+            Dismiss
+          </Button>
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container
