@@ -4,11 +4,13 @@ declare module "next-auth" {
    */
   interface Session {
     accessToken?: string;
+    idToken?: string;
     user: {
       id: string;
       name: string;
       email: string;
     };
+    error?: string;
   }
 
   interface Profile {
@@ -23,5 +25,9 @@ declare module "next-auth/jwt" {
   interface JWT {
     /** OpenID ID Token */
     accessToken?: string;
+    idToken?: string;
+    refreshToken?: string;
+    expiresAt?: number;
+    error?: string;
   }
 }

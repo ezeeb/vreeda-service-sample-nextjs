@@ -2,6 +2,67 @@ import connectToDatabase from "@/lib/mongodb"
 import UserContext from "@/models/UserContext"
 import AzureADB2CProvider from "next-auth/providers/azure-ad-b2c";
 
+/**
+ * Refresh Azure B2C access token using refresh token
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function refreshAccessToken(token: any) {
+    try {
+        console.log('[NextAuth Token Refresh] Starting token refresh...');
+        console.log('[NextAuth Token Refresh] Token expires at:', new Date(token.expiresAt).toISOString());
+        console.log('[NextAuth Token Refresh] Current time:', new Date().toISOString());
+
+        const tenantName = process.env.AZURE_AD_B2C_TENANT_NAME!;
+        const userFlow = process.env.AZURE_AD_B2C_PRIMARY_USER_FLOW!;
+        const clientId = process.env.AZURE_AD_B2C_CLIENT_ID!;
+        const clientSecret = process.env.AZURE_AD_B2C_CLIENT_SECRET!;
+
+        const url = `https://${tenantName}.b2clogin.com/${tenantName}.onmicrosoft.com/${userFlow}/oauth2/v2.0/token`;
+
+        console.log('[NextAuth Token Refresh] Calling Azure B2C token endpoint:', url);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                grant_type: 'refresh_token',
+                refresh_token: token.refreshToken,
+                scope: `${clientId} offline_access openid`,
+            }),
+        });
+
+        const refreshedTokens = await response.json();
+
+        if (!response.ok) {
+            console.error('[NextAuth Token Refresh] ❌ Failed with status:', response.status);
+            console.error('[NextAuth Token Refresh] Error details:', refreshedTokens);
+            throw new Error(`Token refresh failed: ${refreshedTokens.error_description || response.statusText}`);
+        }
+
+        const newExpiresAt = Date.now() + refreshedTokens.expires_in * 1000;
+        console.log('[NextAuth Token Refresh] ✅ Success!');
+        console.log('[NextAuth Token Refresh] New token expires at:', new Date(newExpiresAt).toISOString());
+        console.log('[NextAuth Token Refresh] Token lifetime:', refreshedTokens.expires_in, 'seconds');
+
+        return {
+            ...token,
+            idToken: refreshedTokens.id_token,
+            accessToken: refreshedTokens.access_token,
+            expiresAt: newExpiresAt,
+            refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
+        };
+    } catch (error) {
+        console.error('[NextAuth Token Refresh] ❌ Exception occurred:', error);
+
+        return {
+            ...token,
+            error: 'RefreshAccessTokenError',
+        };
+    }
+}
+
 export const authOptions = {
     session: {
         strategy: "jwt" as const,
@@ -31,20 +92,51 @@ export const authOptions = {
     callbacks: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async jwt({ token, account, profile }: any) {
+            // Initial sign in - store tokens and expiration
             if (account) {
+                const expiresAt = Date.now() + account.expires_in * 1000;
+                console.log('[NextAuth JWT] Initial sign-in detected');
+                console.log('[NextAuth JWT] Token lifetime:', account.expires_in, 'seconds');
+                console.log('[NextAuth JWT] Token expires at:', new Date(expiresAt).toISOString());
+
                 token.id = profile.id;
                 // Store ID Token for ConsentService OAuth2 flow (id_token_hint parameter)
                 token.idToken = account.id_token;
+                token.accessToken = account.access_token;
                 // Store Refresh Token for session refresh
                 token.refreshToken = account.refresh_token;
+                // Store token expiration time (expires_in is in seconds)
+                token.expiresAt = expiresAt;
+                return token;
             }
-            return token;
+
+            const now = Date.now();
+            const timeUntilExpiry = token.expiresAt - now;
+            const minutesUntilExpiry = Math.floor(timeUntilExpiry / 1000 / 60);
+
+            // Token is still valid
+            if (now < token.expiresAt) {
+                console.log(`[NextAuth JWT] Token still valid (expires in ${minutesUntilExpiry} minutes at ${new Date(token.expiresAt).toISOString()})`);
+                return token;
+            }
+
+            // Token has expired, try to refresh it
+            console.log('[NextAuth JWT] ⚠️ Token expired, triggering refresh...');
+            console.log('[NextAuth JWT] Token expired at:', new Date(token.expiresAt).toISOString());
+            console.log('[NextAuth JWT] Current time:', new Date(now).toISOString());
+            return refreshAccessToken(token);
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async session({ session, token }: any) {
             // Add ID Token to session for OAuth2 flow
             session.idToken = token.idToken;
+            session.accessToken = token.accessToken;
             session.user.id = token.sub;
+
+            // Pass error to session so the client can handle it
+            if (token.error) {
+                session.error = token.error;
+            }
 
             return session;
         },

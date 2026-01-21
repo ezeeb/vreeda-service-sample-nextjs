@@ -68,13 +68,14 @@ export class OAuth2Client {
   }
 
   /**
-   * Build authorization URL for Browser Mode
+   * Build authorization URL for ConsentService (unified for Browser and WebView modes)
    * @param idToken - ID Token from Azure B2C (for id_token_hint parameter)
    * @param state - Random state for CSRF protection
    * @param pkce - PKCE challenge
+   * @param isWebView - Whether request is from VREEDA App (adds ?is_webview=true for UI mode detection)
    * @returns Authorization URL
    */
-  getAuthorizationUrl(idToken: string, state: string, pkce: PKCEChallenge): string {
+  getAuthorizationUrl(idToken: string, state: string, pkce: PKCEChallenge, isWebView: boolean = false): string {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: this.config.clientId,
@@ -83,32 +84,17 @@ export class OAuth2Client {
       state,
       code_challenge: pkce.codeChallenge,
       code_challenge_method: pkce.codeChallengeMethod,
-      id_token_hint: idToken  // Browser Mode: ID Token as query parameter
+      id_token_hint: idToken  // BOTH modes use id_token_hint (OAuth2/OIDC standard)
     });
+
+    // Add is_webview parameter for UI mode detection (minimal vs full UI)
+    if (isWebView) {
+      params.append('is_webview', 'true');
+    }
 
     return `${this.config.consentServiceUrl}/connect/authorize?${params}`;
   }
 
-  /**
-   * Build authorization URL for WebView Mode
-   * @param state - Random state for CSRF protection
-   * @param pkce - PKCE challenge
-   * @returns Authorization URL (without id_token_hint - token comes via Authorization header)
-   */
-  getAuthorizationUrlForWebView(state: string, pkce: PKCEChallenge): string {
-    const params = new URLSearchParams({
-      response_type: 'code',
-      client_id: this.config.clientId,
-      redirect_uri: this.config.redirectUri,
-      scope: this.config.scopes.join(' '),
-      state,
-      code_challenge: pkce.codeChallenge,
-      code_challenge_method: pkce.codeChallengeMethod,
-      // NO id_token_hint - token comes via Authorization: Bearer header from InAppBrowser
-    });
-
-    return `${this.config.consentServiceUrl}/connect/authorize?${params}`;
-  }
 
   /**
    * Exchange authorization code for access and refresh tokens
@@ -203,36 +189,6 @@ export class OAuth2Client {
     }
   }
 
-  /**
-   * Introspect access token
-   * @param token - Access token to introspect
-   * @returns Introspection response
-   */
-  async introspectToken(token: string): Promise<IntrospectionResponse> {
-    const params = new URLSearchParams({
-      token,
-      token_type_hint: 'access_token',
-      client_id: this.config.clientId,
-      client_secret: this.config.clientSecret
-    });
-
-    const response = await fetch(`${this.config.consentServiceUrl}/connect/introspect`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: params
-    });
-
-    if (!response.ok) {
-      throw new OAuth2Error(
-        'introspection_failed',
-        `HTTP ${response.status}: ${response.statusText}`
-      );
-    }
-
-    return response.json();
-  }
 }
 
 /**
