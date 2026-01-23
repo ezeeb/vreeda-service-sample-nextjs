@@ -3,6 +3,7 @@ import { DevicesResponse } from '@/types/vreedaApi';
 import DeviceControl from './DeviceControl';
 import { Alert, Box, Button, CircularProgress, IconButton, List, Typography } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { useTranslation } from 'react-i18next';
 
 interface DeviceListProps {
   selectedDevices: string[];
@@ -31,6 +32,7 @@ export default function DeviceList({
   onRevokeGrant,
   isWebView
 }: DeviceListProps) {
+  const { t } = useTranslation();
 
   return (
     <Box sx={{ width: '100%', pt: 4 }}>
@@ -45,7 +47,7 @@ export default function DeviceList({
       >
         <Box display="flex" gap={1} alignItems="center">
           <Typography variant="h5" gutterBottom>
-            Devices
+            {t('devices.list.title')}
           </Typography>
 
           {/* In WebView mode: show Reload button right next to title */}
@@ -67,7 +69,7 @@ export default function DeviceList({
                 whiteSpace: 'nowrap'
               }}
             >
-              Revoke Device Access
+              {t('devices.list.revokeAccess')}
             </Button>
           )}
         </Box>
@@ -83,7 +85,7 @@ export default function DeviceList({
       {/* Show loading state while checking grant status */}
       {loadingGrant ? (
         <Box sx={{ textAlign: 'center', pt: 2 }}>
-          <Typography variant="body2">Checking grant status...</Typography>
+          <Typography variant="body2">{t('devices.grant.checkingStatus')}</Typography>
         </Box>
       ) : grantStatus !== "active" ? (
         // Show "Connect Devices" box if grant is not active
@@ -95,10 +97,10 @@ export default function DeviceList({
           textAlign: 'center'
         }}>
           <Typography variant="body1" fontWeight="bold" gutterBottom>
-            Device Access Required
+            {t('devices.grant.required')}
           </Typography>
           <Typography variant="caption" gutterBottom display="block">
-            Connect your VREEDA devices to use this service
+            {t('devices.grant.requiredDescription')}
           </Typography>
           <Button
             variant="contained"
@@ -106,13 +108,13 @@ export default function DeviceList({
             sx={{ mt: 2 }}
             onClick={() => window.location.href = '/api/consent/authorize'}
           >
-            Connect Devices
+            {t('devices.grant.connect')}
           </Button>
         </Box>
       ) : (
         // Grant is active - show device list
         <>
-          {error && <Alert severity="error">Error: {error}</Alert>}
+          {error && <Alert severity="error">{t('devices.list.error', { error })}</Alert>}
           {loadingDevices ? (
             <Box display="flex" justifyContent="center" pt={2}>
               <CircularProgress />

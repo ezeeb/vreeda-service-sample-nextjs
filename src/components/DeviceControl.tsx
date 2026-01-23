@@ -1,8 +1,10 @@
 import { DeviceRequestModel, DeviceResponseModel } from '@/types/vreedaApi';
 import { Box, Card, CardContent, Checkbox, FormControlLabel, Slider, Switch, Typography } from '@mui/material';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function DeviceControl({ id, model, selected, onSelectionChange}: { id: string, model: DeviceResponseModel, selected: boolean, onSelectionChange: (id: string, selected: boolean) => void }) {
+  const { t } = useTranslation();
   const [isOn, setIsOn] = useState(model.states?.on?.value);
   const [sliderValue, setSliderValue] = useState(model.states?.v?.value || 0);
 
@@ -74,7 +76,7 @@ export default function DeviceControl({ id, model, selected, onSelectionChange}:
                 sx={{ mr: 1 }}
               />
             <Typography variant="h6">
-              {model.tags?.customDeviceName || 'Unnamed Device'}
+              {model.tags?.customDeviceName || t('devices.control.unnamedDevice')}
             </Typography>
             {/* Switch positioned at top-right corner */}
             <FormControlLabel
@@ -90,17 +92,17 @@ export default function DeviceControl({ id, model, selected, onSelectionChange}:
             />
           </Box>
           <Typography variant="body2" color="text.secondary">
-            Device ID: {id}
+            {t('devices.control.deviceId')} {id}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Status: {model.connected?.value ? 'Online' : 'Offline'}
+            {t('devices.control.status')} {model.connected?.value ? t('devices.control.online') : t('devices.control.offline')}
           </Typography>
 
           {/* Slider for 'v' state, with conditional rendering */}
           {typeof sliderValue === 'number' && (
             <Box mt={2}>
               <Typography variant="body2" color="text.secondary" gutterBottom>
-                Brightness
+                {t('devices.control.brightness')}
               </Typography>
               <Slider
                 value={sliderValue}

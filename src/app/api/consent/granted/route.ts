@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import UserContext from "@/models/UserContext";
 import { getUserId } from "@/lib/auth";
+import { checkGrantStatus } from "@/lib/grant";
 
+/**
+ * API Route to check if user has granted OAuth2 consent
+ * Uses central business logic from @/lib/grant
+ */
 export async function GET(req: Request) {
   const userId = await getUserId(req);
   if (!userId) {
@@ -11,31 +14,13 @@ export async function GET(req: Request) {
   }
 
   try {
-    await connectToDatabase();
+    const grantStatus = await checkGrantStatus(userId);
 
-    const userContext = await UserContext.findOne({ userId });
-
-    if (!userContext) {
-      return NextResponse.json({ granted: false, message: "User context not found" }, { status: 404 });
+    if (grantStatus === "active") {
+      return NextResponse.json({ granted: true, message: "Access granted" }, { status: 200 });
+    } else {
+      return NextResponse.json({ granted: false, message: "Grant renewal needed" }, { status: 401 });
     }
-
-    const { apiAccessTokens } = userContext;
-
-    if (!apiAccessTokens?.accessToken || !apiAccessTokens?.refreshToken) {
-      return NextResponse.json({ granted: false, message: "Tokens are missing" }, { status: 401 });
-    }
-
-    const now = new Date();
-    const accessTokenExpired =
-      apiAccessTokens.accessTokenExpiration && new Date(apiAccessTokens.accessTokenExpiration) <= now;
-    const refreshTokenExpired =
-      apiAccessTokens.refreshTokenExpiration && new Date(apiAccessTokens.refreshTokenExpiration) <= now;
-
-    if (accessTokenExpired || refreshTokenExpired) {
-      return NextResponse.json({ granted: false, message: "Tokens are expired" }, { status: 401 });
-    }
-
-    return NextResponse.json({ granted: true, message: "Access granted" }, { status: 200 });
   } catch (error) {
     console.error('User granted check failed:', error instanceof Error ? error.message : String(error));
     return NextResponse.json({ error: "Failed to validate user context" }, { status: 500 });

@@ -6,6 +6,7 @@ import theme from '@/theme';
 import { NextAuthProvider } from "@/app/providers";
 import WebViewPolyfillInitializer from '@/components/WebViewPolyfillInitializer';
 import WebViewBodyStyle from '@/components/WebViewBodyStyle';
+import I18nProvider from '@/components/I18nProvider';
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   return (
@@ -19,7 +20,9 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <NextAuthProvider>{props.children}</NextAuthProvider>
+            <I18nProvider>
+              <NextAuthProvider>{props.children}</NextAuthProvider>
+            </I18nProvider>
           </ThemeProvider>
         </AppRouterCacheProvider>
       </body>

@@ -1,6 +1,7 @@
 import connectToDatabase from "@/lib/mongodb"
 import UserContext from "@/models/UserContext"
 import AzureADB2CProvider from "next-auth/providers/azure-ad-b2c";
+import { isTokenExpired } from "@/lib/auth";
 
 /**
  * Refresh Azure B2C access token using refresh token
@@ -111,18 +112,24 @@ export const authOptions = {
             }
 
             const now = Date.now();
-            const timeUntilExpiry = token.expiresAt - now;
-            const minutesUntilExpiry = Math.floor(timeUntilExpiry / 1000 / 60);
+
+            // Check both access token expiration time and ID token directly
+            const accessTokenExpired = now >= token.expiresAt;
+            const idTokenExpired = token.idToken ? isTokenExpired(token.idToken) : false;
 
             // Token is still valid
-            if (now < token.expiresAt) {
-                console.log(`[NextAuth JWT] Token still valid (expires in ${minutesUntilExpiry} minutes at ${new Date(token.expiresAt).toISOString()})`);
+            if (!accessTokenExpired && !idTokenExpired) {
                 return token;
             }
 
             // Token has expired, try to refresh it
-            console.log('[NextAuth JWT] ⚠️ Token expired, triggering refresh...');
-            console.log('[NextAuth JWT] Token expired at:', new Date(token.expiresAt).toISOString());
+            if (accessTokenExpired) {
+                console.log('[NextAuth JWT] ⚠️ Access token expired, triggering refresh...');
+                console.log('[NextAuth JWT] Token expired at:', new Date(token.expiresAt).toISOString());
+            }
+            if (idTokenExpired) {
+                console.log('[NextAuth JWT] ⚠️ ID token expired, triggering refresh...');
+            }
             console.log('[NextAuth JWT] Current time:', new Date(now).toISOString());
             return refreshAccessToken(token);
         },

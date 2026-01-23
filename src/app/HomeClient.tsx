@@ -4,174 +4,57 @@ import Container from '@mui/material/Container';
 import Box from '@mui/material/Box';
 import DeviceList from '@/components/DeviceList';
 import { signIn, signOut } from 'next-auth/react';
-import { Button, CircularProgress, Typography, Alert } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Button, CircularProgress, Typography } from '@mui/material';
 import CustomPatternControl from '@/components/CustomPatternControl';
 import { useAuth } from '@/hooks/useAuth';
 import { useOAuth2Error } from '@/hooks/useOAuth2Error';
+import { useTranslation } from 'react-i18next';
+import { useDeviceManagement } from '@/hooks/useDeviceManagement';
+import { useGrantManagement } from '@/hooks/useGrantManagement';
+import OAuth2ErrorDisplay from '@/components/OAuth2ErrorDisplay';
 import { DevicesResponse } from '@/types/vreedaApi';
 
 interface HomeClientProps {
   isWebView: boolean;
   initialGrantStatus: "active" | "needs renewal";
+  initialDevices: DevicesResponse | null;
+  initialSelectedDevices: string[];
 }
 
-export default function HomeClient({ isWebView, initialGrantStatus }: HomeClientProps) {
+export default function HomeClient({
+  isWebView,
+  initialGrantStatus,
+  initialDevices,
+  initialSelectedDevices
+}: HomeClientProps) {
+  const { t, ready: i18nReady } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const { oauth2Error, clearError } = useOAuth2Error();
 
-  const [grantStatus, setGrantStatus] = useState<"active" | "needs renewal">(initialGrantStatus);
-  const [loadingGrant, setLoadingGrant] = useState(false);
-  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
-  const [devices, setDevices] = useState<DevicesResponse>({});
-  const [loadingDevices, setLoadingDevices] = useState(false);
-  const [devicesError, setDevicesError] = useState<string | null>(null);
-  const [reloadingDevices, setReloadingDevices] = useState(false);
+  // Device management with server-side initial data
+  const {
+    devices,
+    selectedDevices,
+    isLoading: loadingDevices,
+    error: devicesError,
+    reloading: reloadingDevices,
+    handleSelectionChange,
+    handleReload,
+  } = useDeviceManagement(isAuthenticated, {
+    initialDevices,
+    initialSelectedDevices
+  });
 
-  const fetchSelectedDevices = async () => {
-    try {
-      const response = await fetch(`/api/user/configuration`);
-      if (!response.ok) throw new Error("Failed to fetch configuration");
-      const data = await response.json();
-      setSelectedDevices(data.devices || []);
-    } catch (error) {
-      console.error("Error fetching selected devices:", error);
-    }
-  };
+  // Grant management
+  const {
+    grantStatus,
+    isLoading: loadingGrant,
+    revokeGrant,
+  } = useGrantManagement(initialGrantStatus, isAuthenticated);
 
-  const checkGrantStatus = async () => {
-    try {
-      const response = await fetch(`/api/consent/granted`);
-      if (!response.ok) {
-        throw new Error("Failed to check grant status");
-      }
-      const data = await response.json();
-      setGrantStatus(data.granted ? "active" : "needs renewal");
-    } catch (error) {
-      console.error("Error checking grant status:", error);
-      setGrantStatus("needs renewal");
-    }
-  };
-
-  const fetchDevices = async () => {
-    setDevicesError(null);
-    try {
-      const response = await fetch('/api/vreeda/list-devices');
-      if (!response.ok) throw new Error('Failed to fetch devices');
-      const data: DevicesResponse = await response.json();
-      setDevices(data);
-    } catch (err) {
-      setDevicesError((err as Error).message);
-    } finally {
-      setReloadingDevices(false);
-    }
-  };
-
-  // Load all data in parallel on mount (when authenticated)
-  useEffect(() => {
-    if (isAuthenticated) {
-      setLoadingDevices(true);
-
-      // Load in parallel for better performance (grant status already loaded server-side)
-      Promise.all([
-        fetchSelectedDevices(),
-        fetchDevices()
-      ]).finally(() => {
-        setLoadingDevices(false);
-      });
-    }
-  }, [isAuthenticated]);
-
-  const handleSelectionChange = async (deviceId: string, isSelected: boolean) => {
-    const updatedDevices = isSelected
-    ? [...selectedDevices, deviceId]
-    : selectedDevices.filter((id) => id !== deviceId);
-
-    setSelectedDevices(updatedDevices);
-
-    // Save changes to the backend
-    try {
-      const response = await fetch("/api/user/configuration", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          configuration: { devices: updatedDevices },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update configuration");
-      }
-
-      console.log("Configuration updated successfully");
-    } catch (error) {
-      console.error("Error updating configuration:", error);
-    }
-  };
-
-  const handleReloadDevices = () => {
-    setReloadingDevices(true);
-    fetchDevices();
-  };
-
-  const revokeGrant = async () => {
-    if (!isAuthenticated) return;
-    setLoadingGrant(true);
-    try {
-      const response = await fetch(`/api/consent/revoke`, {
-        method: "GET",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to revoke grant");
-      }
-      // After revoking, update grant status
-      await checkGrantStatus();
-    } catch (error) {
-      console.error("Error revoking grant:", error);
-    } finally {
-      setLoadingGrant(false);
-    }
-  };
-
-  const loginAzureADB2C = async () => {
-    await signIn('azure-ad-b2c')
-  };
-
-  const logoutAzureB2C = async () => {
-    await signOut();
-  };
-
-  // OAuth2 error messages (user-friendly)
-  const oauth2ErrorMessages: Record<string, string> = {
-    'access_denied': 'You denied access to your devices. You can grant access again when ready.',
-    'invalid_grant': 'Authentication failed. Please log in and try again.',
-    'invalid_scope': 'The requested permissions are invalid. Please contact support.',
-    'server_error': 'The authorization server encountered an error. Please try again later.',
-  };
-
-  // Display OAuth2 error if present
+  // OAuth2 error display
   if (oauth2Error) {
-    const userMessage = oauth2ErrorMessages[oauth2Error.error]
-      || oauth2Error.errorDescription
-      || 'An authorization error occurred.';
-
-    return (
-      <Container maxWidth="md">
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Typography variant="h5" color="error" gutterBottom>
-            Authorization Error
-          </Typography>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {userMessage}
-          </Alert>
-          <Button variant="contained" onClick={clearError}>
-            Dismiss
-          </Button>
-        </Box>
-      </Container>
-    );
+    return <OAuth2ErrorDisplay oauth2Error={oauth2Error} onDismiss={clearError} />;
   }
 
   return (
@@ -194,11 +77,12 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
         }}
       >
         {/* Show title only in Browser mode */}
-        {!isWebView && (
+        {!isWebView && i18nReady && (
           <Typography variant="h4" gutterBottom>
-            VREEDA Sample Service
+            {t('home.title')}
           </Typography>
         )}
+
         {isLoading ? (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
             {!isWebView && (<CircularProgress />)}
@@ -214,8 +98,8 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
                   right: 16,
                 }}
               >
-                <Button variant="outlined" color="primary" onClick={logoutAzureB2C}>
-                  Logout
+                <Button variant="outlined" color="primary" onClick={() => signOut()}>
+                  {t('home.auth.logout')}
                 </Button>
               </Box>
             )}
@@ -229,7 +113,7 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
               devices={devices}
               loadingDevices={loadingDevices}
               error={devicesError}
-              onReload={handleReloadDevices}
+              onReload={handleReload}
               reloading={reloadingDevices}
               onRevokeGrant={revokeGrant}
               isWebView={isWebView}
@@ -239,7 +123,7 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
             <Box sx={{ width: '100%', pt: 4 }}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Typography variant="h5" gutterBottom>
-                  Custom Patterns
+                  {t('patterns.title')}
                 </Typography>
               </Box>
               <CustomPatternControl selectedDevices={selectedDevices} grantStatus={grantStatus}/>
@@ -248,11 +132,10 @@ export default function HomeClient({ isWebView, initialGrantStatus }: HomeClient
         ) : (
           <>
             <Typography variant="body1" gutterBottom>
-              Please sign in to activate service.
+              {t('home.auth.pleaseSignIn')}
             </Typography>
-            {/* SignIn Button */}
-            <Button variant="outlined" color="primary" onClick={loginAzureADB2C}>
-              Sign In
+            <Button variant="outlined" color="primary" onClick={() => signIn('azure-ad-b2c')}>
+              {t('home.auth.signIn')}
             </Button>
           </>
         )}

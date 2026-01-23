@@ -4,35 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { Session } from 'next-auth';
 import { createOAuth2Client } from '@/lib/oauth2Client';
 import { storePKCEVerifier } from '@/lib/pkceStore';
-import { getUserId } from "@/lib/auth";
-
-/**
- * Decode JWT token payload (without verification)
- * Returns null if token is malformed
- */
-function decodeJWT(token: string): { exp?: number } | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-
-    const payload = Buffer.from(parts[1], 'base64').toString('utf8');
-    return JSON.parse(payload);
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Check if JWT token is expired
- */
-function isTokenExpired(token: string): boolean {
-  const payload = decodeJWT(token);
-  if (!payload || !payload.exp) return true;
-
-  // exp is in seconds, Date.now() is in milliseconds
-  // Add 60 second buffer to ensure token is still valid during consent flow
-  return Date.now() >= (payload.exp - 60) * 1000;
-}
+import { getUserId, isTokenExpired } from "@/lib/auth";
 
 /**
  * OAuth2 Authorization Endpoint
@@ -40,7 +12,7 @@ function isTokenExpired(token: string): boolean {
  *
  * Supports two authentication modes:
  * 1. Browser Mode:
- *    - NextAuth session provides ID token
+ *    - NextAuth session provides ID token (auto-refreshed by jwt() callback)
  *    - Redirects to ConsentService with id_token_hint query parameter
  *    - Full UI (with AppBar, Footer, Logout button)
  * 2. WebView Mode:
@@ -52,13 +24,14 @@ function isTokenExpired(token: string): boolean {
  * Only authentication source differs (session vs. bearer token).
  * UI mode is determined by is_webview query parameter.
  *
+ * Token Refresh (Browser Mode):
+ * - The jwt() callback in auth-config.ts automatically refreshes expired tokens
+ * - No manual refresh logic needed in this endpoint
+ *
  * Flow:
  * 1. Check user authentication (NextAuth session or Bearer token)
  * 2. Extract ID Token and detect mode (Browser vs WebView)
- * 3. Validate ID Token expiration (Browser Mode only):
- *    - If expired: Automatically refresh using Azure B2C refresh token
- *    - If refresh fails: Return error with logout suggestion
- *    - If refresh succeeds: Continue with new ID token
+ * 3. Validate ID Token is present and valid
  * 4. Generate PKCE challenge + random state
  * 5. Store code verifier in MongoDB
  * 6. Redirect to ConsentService authorization URL with id_token_hint (+ is_webview if WebView mode)
@@ -86,8 +59,9 @@ export async function GET(req: Request) {
       idToken = authHeader.substring(7);
       isWebView = true; // Request from VREEDA App
     } else {
-      // Browser Mode: Get ID token from session and check validity
-      let session: Session | null = await getServerSession(authOptions);
+      // Browser Mode: Get ID token from session
+      // The jwt() callback in auth-config.ts automatically refreshes expired tokens
+      const session: Session | null = await getServerSession(authOptions);
 
       // Check if session has refresh error (token refresh failed)
       if (session?.error === 'RefreshAccessTokenError') {
@@ -99,33 +73,14 @@ export async function GET(req: Request) {
 
       idToken = (session as Session & { idToken?: string })?.idToken || null;
 
-      // Check if ID token is expired
-      if (idToken && isTokenExpired(idToken)) {
-        console.log('[Consent Authorize] ID Token expired, triggering refresh...');
-
-        // Force NextAuth to refresh the token by getting a fresh session
-        // This will trigger the jwt() callback which checks expiration and refreshes
-        session = await getServerSession(authOptions);
-
-        // Check again if refresh worked
-        if (session?.error === 'RefreshAccessTokenError') {
-          const errorUrl = new URL('/auth-error', req.url);
-          errorUrl.searchParams.set('message', 'Your session has expired and could not be refreshed.');
-          errorUrl.searchParams.set('action', 'logout_required');
-          return NextResponse.redirect(errorUrl);
-        }
-
-        idToken = (session as Session & { idToken?: string })?.idToken || null;
-
-        // Verify token is now valid
-        if (!idToken || isTokenExpired(idToken)) {
-          const errorUrl = new URL('/auth-error', req.url);
-          errorUrl.searchParams.set('message', 'Failed to obtain a valid ID token.');
-          errorUrl.searchParams.set('action', 'logout_required');
-          return NextResponse.redirect(errorUrl);
-        }
-
-        console.log('[Consent Authorize] ID Token successfully refreshed');
+      // Sanity check: Verify ID token is valid
+      // This should never happen as jwt() callback already handles refresh
+      if (idToken && isTokenExpired(idToken, 60)) {
+        console.error('[Consent Authorize] ID Token expired despite refresh - this should not happen');
+        const errorUrl = new URL('/auth-error', req.url);
+        errorUrl.searchParams.set('message', 'Failed to obtain a valid ID token.');
+        errorUrl.searchParams.set('action', 'logout_required');
+        return NextResponse.redirect(errorUrl);
       }
 
       isWebView = false; // Request from browser

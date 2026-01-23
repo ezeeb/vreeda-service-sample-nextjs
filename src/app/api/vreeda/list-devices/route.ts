@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
-import { listDevices } from '@/lib/vreedaApiClient'; // Replace with your actual utility import
-import UserContext from "@/models/UserContext";
 import { getUserId } from "@/lib/auth";
+import { getDevices } from '@/lib/devices';
 
+/**
+ * API Route to list devices
+ * Uses central business logic from @/lib/devices
+ */
 export async function GET(req: Request) {
   const userId = await getUserId(req);
   if (!userId) {
@@ -10,17 +13,15 @@ export async function GET(req: Request) {
   }
 
   try {
-    const userContext = await UserContext.findOne({ userId });
-    if (!userContext) {
-      return NextResponse.json({ granted: false, message: "User context not found" }, { status: 404 });
+    const devices = await getDevices(userId);
+
+    if (devices === null) {
+      return NextResponse.json(
+        { error: 'Grant not active or tokens missing' },
+        { status: 401 }
+      );
     }
 
-    const { apiAccessTokens } = userContext;
-    if (!apiAccessTokens?.accessToken || !apiAccessTokens?.refreshToken) {
-      return NextResponse.json({ granted: false, message: "Tokens are missing" }, { status: 401 });
-    }
-
-    const devices = await listDevices(apiAccessTokens?.accessToken);
     return NextResponse.json(devices);
   } catch (error) {
     console.error('Error fetching devices:', error);

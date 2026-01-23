@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import connectToDatabase from "@/lib/mongodb";
-import UserContext from "@/models/UserContext";
+import { decodeTokenUserId } from "@/lib/auth";
+import { checkGrantStatus } from "@/lib/grant";
 
 /**
  * ServiceStateAndDescription Endpoint
@@ -8,73 +8,33 @@ import UserContext from "@/models/UserContext";
  * Returns service metadata and user grant status for the Vreeda App (WebView).
  * Called by the app to display service information and check if user has granted device access.
  *
- * Authentication: Bearer token from Azure B2C (user's access token from app)
+ * Authentication: Optional Bearer token from Azure B2C
+ * - With token: Returns authenticated=true and grant status
+ * - Without token: Returns authenticated=false and granted=false
  *
  * Response format matches ServiceDescriptionAndState type from vreeda-vreeli hooks/service.ts
+ * Uses central business logic from @/lib/auth and @/lib/grant
  */
 export async function GET(req: Request) {
   try {
-    // Extract Bearer token from Authorization header
+    // Extract Bearer token from Authorization header (optional)
     const authHeader = req.headers.get('Authorization');
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { error: "Missing or invalid Authorization header" },
-        { status: 401 }
-      );
-    }
-
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-
-    // Extract user ID from Azure B2C token (decode JWT without validation)
-    // The app already validated the token, we just need the user ID
-    let userId: string | null = null;
-    try {
-      // Decode JWT payload (second part) without validation
-      const parts = token.split('.');
-      if (parts.length === 3) {
-        let payload = parts[1];
-
-        // Add padding if needed for Base64 decoding
-        switch (payload.length % 4) {
-          case 2: payload += "=="; break;
-          case 3: payload += "="; break;
-        }
-        const payloadBytes = Buffer.from(payload, 'base64');
-        const payloadJson = payloadBytes.toString('utf8');
-        const tokenPayload = JSON.parse(payloadJson);
-
-        // Extract user ID from standard claims
-        // Azure B2C uses "sub" or "oid" (object ID)
-        userId = tokenPayload.sub || tokenPayload.oid || null;
-      }
-    } catch (error) {
-      console.error('[ServiceStateAndDescription] Failed to decode Bearer token:', error);
-      // Continue without user ID - granted will be false
-    }
-
-    // Check grant status for this specific user
+    let authenticated = false;
     let granted = false;
 
-    // Only check grant status if we have a user ID
-    if (userId) {
-      try {
-        await connectToDatabase();
+    // Only check authentication and grant status if Bearer token is provided
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
 
-        const userContext = await UserContext.findOne({ userId });
+      // Extract user ID from Bearer token using central auth logic
+      const userId = decodeTokenUserId(token);
 
-        if (userContext?.apiAccessTokens) {
-          const now = new Date();
-          const accessTokenValid = !userContext.apiAccessTokens.accessTokenExpiration ||
-                                   new Date(userContext.apiAccessTokens.accessTokenExpiration) > now;
-          const refreshTokenValid = !userContext.apiAccessTokens.refreshTokenExpiration ||
-                                    new Date(userContext.apiAccessTokens.refreshTokenExpiration) > now;
+      if (userId) {
+        authenticated = true;
 
-          granted = accessTokenValid || refreshTokenValid;
-        }
-      } catch (error) {
-        console.error('[ServiceStateAndDescription] Error checking grant status:', error);
-        // Continue with granted = false
+        // Check grant status using central business logic
+        const grantStatus = await checkGrantStatus(userId);
+        granted = grantStatus === "active";
       }
     }
 
@@ -94,7 +54,7 @@ export async function GET(req: Request) {
         secureGrant: false, // Uses OAuth2 with PKCE
       },
       state: {
-        authenticated: true, // User is authenticated (has valid Bearer token from app)
+        authenticated: authenticated, // User is authenticated (has valid Bearer token from app)
         granted: granted, // User has granted device access via OAuth2 flow
       },
     };

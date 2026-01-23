@@ -1,0 +1,53 @@
+{
+  "home": {
+    "title": "VREEDA Sample Service",
+    "auth": {
+      "pleaseSignIn": "Veuillez vous connecter pour activer le service.",
+      "signIn": "Se connecter",
+      "logout": "Se déconnecter"
+    },
+    "oauth2Errors": {
+      "authorizationError": "Erreur d'autorisation",
+      "dismiss": "Fermer",
+      "accessDenied": "Vous avez refusé l'accès à vos appareils. Vous pouvez accorder l'accès à nouveau quand vous le souhaitez.",
+      "invalidGrant": "Authentification échouée. Veuillez vous connecter et réessayer.",
+      "invalidScope": "Les permissions demandées sont invalides. Veuillez contacter le support.",
+      "serverError": "Le serveur d'autorisation a rencontré une erreur. Veuillez réessayer plus tard.",
+      "genericError": "Une erreur d'autorisation s'est produite."
+    }
+  },
+  "devices": {
+    "list": {
+      "title": "Appareils",
+      "revokeAccess": "Révoquer l'accès aux appareils",
+      "error": "Erreur : {{error}}"
+    },
+    "grant": {
+      "checkingStatus": "Vérification du statut d'accès...",
+      "required": "Accès aux appareils requis",
+      "requiredDescription": "Connectez vos appareils VREEDA pour utiliser ce service",
+      "connect": "Connecter les appareils"
+    },
+    "control": {
+      "deviceId": "ID de l'appareil :",
+      "status": "Statut :",
+      "online": "En ligne",
+      "offline": "Hors ligne",
+      "brightness": "Luminosité",
+      "unnamedDevice": "Appareil sans nom"
+    }
+  },
+  "patterns": {
+    "title": "Motifs personnalisés",
+    "customPattern": "Motif personnalisé",
+    "moreInfo": "Plus d'informations sur les motifs personnalisés sur",
+    "run": "Exécuter"
+  },
+  "authError": {
+    "title": "Erreur d'authentification",
+    "genericMessage": "Une erreur d'authentification s'est produite.",
+    "logoutRequired": "Veuillez vous déconnecter et vous reconnecter pour continuer.",
+    "logoutAndSignIn": "Se déconnecter et se reconnecter",
+    "goToHome": "Aller à l'accueil"
+  }
+}

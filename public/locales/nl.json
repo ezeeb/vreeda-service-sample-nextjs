@@ -1,0 +1,53 @@
+{
+  "home": {
+    "title": "VREEDA Sample Service",
+    "auth": {
+      "pleaseSignIn": "Meld u aan om de service te activeren.",
+      "signIn": "Aanmelden",
+      "logout": "Afmelden"
+    },
+    "oauth2Errors": {
+      "authorizationError": "Autorisatiefout",
+      "dismiss": "Sluiten",
+      "accessDenied": "U heeft de toegang tot uw apparaten geweigerd. U kunt de toegang opnieuw verlenen wanneer u dat wilt.",
+      "invalidGrant": "Authenticatie mislukt. Meld u aan en probeer het opnieuw.",
+      "invalidScope": "De gevraagde machtigingen zijn ongeldig. Neem contact op met support.",
+      "serverError": "De autorisatieserver heeft een fout aangetroffen. Probeer het later opnieuw.",
+      "genericError": "Er is een autorisatiefout opgetreden."
+    }
+  },
+  "devices": {
+    "list": {
+      "title": "Apparaten",
+      "revokeAccess": "Apparaattoegang intrekken",
+      "error": "Fout: {{error}}"
+    },
+    "grant": {
+      "checkingStatus": "Toegangsstatus controleren...",
+      "required": "Apparaattoegang vereist",
+      "requiredDescription": "Verbind uw VREEDA-apparaten om deze service te gebruiken",
+      "connect": "Apparaten verbinden"
+    },
+    "control": {
+      "deviceId": "Apparaat-ID:",
+      "status": "Status:",
+      "online": "Online",
+      "offline": "Offline",
+      "brightness": "Helderheid",
+      "unnamedDevice": "Naamloos apparaat"
+    }
+  },
+  "patterns": {
+    "title": "Aangepaste patronen",
+    "customPattern": "Aangepast patroon",
+    "moreInfo": "Meer informatie over aangepaste patronen op",
+    "run": "Uitvoeren"
+  },
+  "authError": {
+    "title": "Authenticatiefout",
+    "genericMessage": "Er is een authenticatiefout opgetreden.",
+    "logoutRequired": "Meld u af en opnieuw aan om door te gaan.",
+    "logoutAndSignIn": "Afmelden en opnieuw aanmelden",
+    "goToHome": "Naar startpagina"
+  }
+}

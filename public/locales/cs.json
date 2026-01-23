@@ -1,0 +1,53 @@
+{
+  "home": {
+    "title": "VREEDA Sample Service",
+    "auth": {
+      "pleaseSignIn": "Přihlaste se prosím pro aktivaci služby.",
+      "signIn": "Přihlásit se",
+      "logout": "Odhlásit se"
+    },
+    "oauth2Errors": {
+      "authorizationError": "Chyba autorizace",
+      "dismiss": "Zavřít",
+      "accessDenied": "Odmítli jste přístup k vašim zařízením. Přístup můžete kdykoli znovu povolit.",
+      "invalidGrant": "Autentizace selhala. Přihlaste se prosím a zkuste to znovu.",
+      "invalidScope": "Požadovaná oprávnění jsou neplatná. Obraťte se prosím na podporu.",
+      "serverError": "Autorizační server narazil na chybu. Zkuste to prosím později.",
+      "genericError": "Došlo k chybě autorizace."
+    }
+  },
+  "devices": {
+    "list": {
+      "title": "Zařízení",
+      "revokeAccess": "Odvolat přístup k zařízení",
+      "error": "Chyba: {{error}}"
+    },
+    "grant": {
+      "checkingStatus": "Kontrola stavu přístupu...",
+      "required": "Vyžadován přístup k zařízení",
+      "requiredDescription": "Připojte svá zařízení VREEDA pro použití této služby",
+      "connect": "Připojit zařízení"
+    },
+    "control": {
+      "deviceId": "ID zařízení:",
+      "status": "Stav:",
+      "online": "Online",
+      "offline": "Offline",
+      "brightness": "Jas",
+      "unnamedDevice": "Nepojmenované zařízení"
+    }
+  },
+  "patterns": {
+    "title": "Vlastní vzory",
+    "customPattern": "Vlastní vzor",
+    "moreInfo": "Více informací o vlastních vzorech na",
+    "run": "Spustit"
+  },
+  "authError": {
+    "title": "Chyba autentizace",
+    "genericMessage": "Došlo k chybě autentizace.",
+    "logoutRequired": "Prosím odhlaste se a přihlaste se znovu pro pokračování.",
+    "logoutAndSignIn": "Odhlásit se a přihlásit se znovu",
+    "goToHome": "Přejít na domovskou stránku"
+  }
+}

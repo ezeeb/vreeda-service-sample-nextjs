@@ -1,0 +1,53 @@
+{
+  "home": {
+    "title": "VREEDA Sample Service",
+    "auth": {
+      "pleaseSignIn": "Bitte melden Sie sich an, um den Dienst zu aktivieren.",
+      "signIn": "Anmelden",
+      "logout": "Abmelden"
+    },
+    "oauth2Errors": {
+      "authorizationError": "Autorisierungsfehler",
+      "dismiss": "Schließen",
+      "accessDenied": "Sie haben den Zugriff auf Ihre Geräte verweigert. Sie können den Zugriff jederzeit wieder gewähren.",
+      "invalidGrant": "Authentifizierung fehlgeschlagen. Bitte melden Sie sich an und versuchen Sie es erneut.",
+      "invalidScope": "Die angeforderten Berechtigungen sind ungültig. Bitte kontaktieren Sie den Support.",
+      "serverError": "Der Autorisierungsserver hat einen Fehler festgestellt. Bitte versuchen Sie es später erneut.",
+      "genericError": "Ein Autorisierungsfehler ist aufgetreten."
+    }
+  },
+  "devices": {
+    "list": {
+      "title": "Geräte",
+      "revokeAccess": "Gerätezugriff widerrufen",
+      "error": "Fehler: {{error}}"
+    },
+    "grant": {
+      "checkingStatus": "Zugangsstatus wird überprüft...",
+      "required": "Gerätezugriff erforderlich",
+      "requiredDescription": "Verbinden Sie Ihre VREEDA-Geräte, um diesen Dienst zu nutzen",
+      "connect": "Geräte verbinden"
+    },
+    "control": {
+      "deviceId": "Geräte-ID:",
+      "status": "Status:",
+      "online": "Online",
+      "offline": "Offline",
+      "brightness": "Helligkeit",
+      "unnamedDevice": "Unbenanntes Gerät"
+    }
+  },
+  "patterns": {
+    "title": "Benutzerdefinierte Muster",
+    "customPattern": "Benutzerdefiniertes Muster",
+    "moreInfo": "Weitere Informationen zu benutzerdefinierten Mustern auf",
+    "run": "Ausführen"
+  },
+  "authError": {
+    "title": "Authentifizierungsfehler",
+    "genericMessage": "Ein Authentifizierungsfehler ist aufgetreten.",
+    "logoutRequired": "Bitte melden Sie sich ab und erneut an, um fortzufahren.",
+    "logoutAndSignIn": "Abmelden und erneut anmelden",
+    "goToHome": "Zur Startseite"
+  }
+}

@@ -10,14 +10,16 @@ import CircularProgress from '@mui/material/CircularProgress';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import { signOut } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Authentication Error Page Content
  * Wrapped in Suspense boundary for useSearchParams()
  */
 function AuthErrorContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
-  const message = searchParams.get('message') || 'An authentication error occurred.';
+  const message = searchParams.get('message') || t('authError.genericMessage');
   const action = searchParams.get('action');
 
   const handleLogout = async () => {
@@ -51,7 +53,7 @@ function AuthErrorContent() {
           />
 
           <Typography variant="h5" gutterBottom>
-            Authentication Error
+            {t('authError.title')}
           </Typography>
 
           <Typography variant="body1" color="text.secondary" paragraph>
@@ -61,7 +63,7 @@ function AuthErrorContent() {
           {action === 'logout_required' && (
             <>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                Please log out and log in again to continue.
+                {t('authError.logoutRequired')}
               </Typography>
 
               <Button
@@ -70,7 +72,7 @@ function AuthErrorContent() {
                 onClick={handleLogout}
                 size="large"
               >
-                Logout and Sign In Again
+                {t('authError.logoutAndSignIn')}
               </Button>
             </>
           )}
@@ -82,7 +84,7 @@ function AuthErrorContent() {
               href="/"
               size="large"
             >
-              Go to Home
+              {t('authError.goToHome')}
             </Button>
           )}
         </Paper>

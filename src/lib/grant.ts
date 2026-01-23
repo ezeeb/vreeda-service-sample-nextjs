@@ -2,8 +2,11 @@ import connectToDatabase from "@/lib/mongodb";
 import UserContext from "@/models/UserContext";
 
 /**
- * Server-side function to check grant status
- * Can be used in Server Components and API routes
+ * Central business logic for checking OAuth2 grant status
+ * Used by both API routes and Server Components
+ *
+ * @param userId - The user ID to check grant status for
+ * @returns "active" if grant is valid, "needs renewal" otherwise
  */
 export async function checkGrantStatus(userId: string | null): Promise<"active" | "needs renewal"> {
   if (!userId) {

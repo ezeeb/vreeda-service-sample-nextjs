@@ -1,6 +1,7 @@
 import { DeviceRequestModel } from "@/types/vreedaApi";
 import { Box, Button, Card, CardContent, Link, TextField, Typography } from "@mui/material";
 import { useState } from "react";
+import { useTranslation } from 'react-i18next';
 
 interface CustomPatternControlProps {
     selectedDevices: string[];
@@ -8,6 +9,7 @@ interface CustomPatternControlProps {
 }
 
 export default function CustomPatternControl({selectedDevices, grantStatus}: CustomPatternControlProps) {
+    const { t } = useTranslation();
     const [pattern, setPattern] = useState("type:football|f:3|x:9.3|r:0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.7,1.0,0;0.2,0,0;0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.2,1.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.2,1.0,0;0.3,0,1.0;0.1,1.0,0;0.2,0,1.0;0.4,1.0,0;0.1,0,1.0;0.1,1.0,0;0.1,0,1.0;0.7,1.0,0;0.3,0,1.0;0.1,1.0,0;0.2,0,1.0;0.4,1.0,0;0.2,0,1.0;0.9,1.0,0;2,0,0|g:0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.2,0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,1.0;0.1,1.0,0;0.2,0,1.0;0.4,1.0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.2,0,0.0;0.9,0.0,0;2,0,0|b:0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.2,0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,0.0235;0.1,0.0235,0;0.2,0,0.0235;0.4,0.0235,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.2,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.1,0,0.0;0.1,0.0,0;0.1,0,0.0;0.7,0.0,0;0.3,0,0.0;0.1,0.0,0;0.2,0,0.0;0.4,0.0,0;0.2,0,0.0;0.9,0.0,0;2,0,0|c:0.1,0,0;0.1,0,0.15;0.3,0.15,0;0.5,0,0;0.2,0,0;0.2,0,0;0.1,0,0.15;0.2,0.15,0;0.4,0,0;0.1,0,0.15;0.2,0.15,0;0.3,0,0;0.2,0,0;0.1,0,0.15;0.2,0.15,0;0.4,0,0;0.1,0,0.15;0.2,0.15,0;0.3,0,0;0.1,0,0;0.1,0,0.15;0.3,0.15,0;0.5,0,0;0.4,0,0;0.1,0,0.15;0.2,0.15,0;0.3,0,0;1.1,0,0;2,0,0");
 
     const isGrantActive = grantStatus === "active";
@@ -50,7 +52,7 @@ export default function CustomPatternControl({selectedDevices, grantStatus}: Cus
                 <CardContent>
                     <Box display="flex" flexDirection="column" gap={2}>
                         <TextField
-                            label="Custom Pattern"
+                            label={t('patterns.customPattern')}
                             variant="outlined"
                             multiline
                             rows={10}
@@ -65,7 +67,7 @@ export default function CustomPatternControl({selectedDevices, grantStatus}: Cus
                             }}
                         />
                         <Typography variant="body2" color="text.secondary">
-                            More information on custom patterns on{" "}
+                            {t('patterns.moreInfo')}{" "}
                             <Link href="https://api.vreeda.com/" target="_blank" rel="noopener noreferrer">
                                 https://api.vreeda.com/
                             </Link>
@@ -76,7 +78,7 @@ export default function CustomPatternControl({selectedDevices, grantStatus}: Cus
                             onClick={handleRunClicked}
                             disabled={!isGrantActive}
                         >
-                            Run
+                            {t('patterns.run')}
                         </Button>
                     </Box>
                 </CardContent>

@@ -1,0 +1,53 @@
+{
+  "home": {
+    "title": "VREEDA Sample Service",
+    "auth": {
+      "pleaseSignIn": "Please sign in to activate service.",
+      "signIn": "Sign In",
+      "logout": "Logout"
+    },
+    "oauth2Errors": {
+      "authorizationError": "Authorization Error",
+      "dismiss": "Dismiss",
+      "accessDenied": "You denied access to your devices. You can grant access again when ready.",
+      "invalidGrant": "Authentication failed. Please log in and try again.",
+      "invalidScope": "The requested permissions are invalid. Please contact support.",
+      "serverError": "The authorization server encountered an error. Please try again later.",
+      "genericError": "An authorization error occurred."
+    }
+  },
+  "devices": {
+    "list": {
+      "title": "Devices",
+      "revokeAccess": "Revoke Device Access",
+      "error": "Error: {{error}}"
+    },
+    "grant": {
+      "checkingStatus": "Checking grant status...",
+      "required": "Device Access Required",
+      "requiredDescription": "Connect your VREEDA devices to use this service",
+      "connect": "Connect Devices"
+    },
+    "control": {
+      "deviceId": "Device ID:",
+      "status": "Status:",
+      "online": "Online",
+      "offline": "Offline",
+      "brightness": "Brightness",
+      "unnamedDevice": "Unnamed Device"
+    }
+  },
+  "patterns": {
+    "title": "Custom Patterns",
+    "customPattern": "Custom Pattern",
+    "moreInfo": "More information on custom patterns on",
+    "run": "Run"
+  },
+  "authError": {
+    "title": "Authentication Error",
+    "genericMessage": "An authentication error occurred.",
+    "logoutRequired": "Please log out and log in again to continue.",
+    "logoutAndSignIn": "Logout and Sign In Again",
+    "goToHome": "Go to Home"
+  }
+}
