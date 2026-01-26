@@ -50,7 +50,6 @@ async function refreshAccessToken(token: any) {
         return {
             ...token,
             idToken: refreshedTokens.id_token,
-            accessToken: refreshedTokens.access_token,
             expiresAt: newExpiresAt,
             refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
         };
@@ -100,10 +99,9 @@ export const authOptions = {
                 console.log('[NextAuth JWT] Token lifetime:', account.expires_in, 'seconds');
                 console.log('[NextAuth JWT] Token expires at:', new Date(expiresAt).toISOString());
 
-                token.id = profile.id;
+                token.id = profile?.sub || profile?.id;
                 // Store ID Token for ConsentService OAuth2 flow (id_token_hint parameter)
                 token.idToken = account.id_token;
-                token.accessToken = account.access_token;
                 // Store Refresh Token for session refresh
                 token.refreshToken = account.refresh_token;
                 // Store token expiration time (expires_in is in seconds)
@@ -137,8 +135,7 @@ export const authOptions = {
         async session({ session, token }: any) {
             // Add ID Token to session for OAuth2 flow
             session.idToken = token.idToken;
-            session.accessToken = token.accessToken;
-            session.user.id = token.sub;
+            session.user.id = token.sub || token.id;
 
             // Pass error to session so the client can handle it
             if (token.error) {
@@ -161,8 +158,13 @@ export const authOptions = {
                     await UserContext.findOneAndUpdate(
                         { userId: user.id },
                         {
-                            userId: user.id,
-                            updatedAt: new Date(),
+                            $setOnInsert: {
+                                userId: user.id,
+                                createdAt: new Date()
+                            },
+                            $set: {
+                                updatedAt: new Date()
+                            }
                         },
                         { upsert: true, new: true }
                     );
@@ -173,4 +175,5 @@ export const authOptions = {
         }
     },
     secret: process.env.NEXTAUTH_SECRET,
+    debug: process.env.NODE_ENV === 'development',
 };

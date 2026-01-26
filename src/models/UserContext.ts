@@ -16,10 +16,18 @@ interface Configuration {
   [key: string]: any; // Allow additional fields if needed
 }
 
+// PKCE State for OAuth2 flow
+interface PKCEState {
+  state: string;
+  codeVerifier: string;
+  createdAt: Date;
+}
+
 // Define the structure of the UserContext document
 interface UserContextDocument extends Document {
   userId: string;
   apiAccessTokens?: ApiAccessTokens;
+  pkceStates?: PKCEState[];
   configuration?: Configuration;
   createdAt: Date;
   updatedAt: Date;
@@ -27,19 +35,28 @@ interface UserContextDocument extends Document {
 
 // Define the schema
 const UserContextSchema = new Schema<UserContextDocument>({
-  userId: { type: String, required: true },
+  userId: { type: String, required: true, unique: true, index: true },
   apiAccessTokens: {
     accessToken: { type: String },
     refreshToken: { type: String },
     accessTokenExpiration: { type: Date },
     refreshTokenExpiration: { type: Date },
   },
+  // PKCE states for OAuth2 flows
+  pkceStates: [{
+    state: { type: String, required: true },
+    codeVerifier: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+  }],
   configuration: {
     type: Schema.Types.Mixed, // Reference the Configuration type for flexibility
   },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
+
+// Index for PKCE state lookups
+UserContextSchema.index({ 'pkceStates.state': 1 });
 
 // Create or reuse the model
 const UserContext: Model<UserContextDocument> =

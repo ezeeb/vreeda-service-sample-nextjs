@@ -100,7 +100,7 @@ export async function GET(req: Request) {
     const pkce = oauth2Client.generatePKCEChallenge();
 
     // Store PKCE code verifier in MongoDB (returns random state value)
-    const state = await storePKCEVerifier(pkce.codeVerifier);
+    const state = await storePKCEVerifier(userId, pkce.codeVerifier);
 
     // Build authorization URL with id_token_hint and redirect
     // Both Browser and WebView modes use id_token_hint query parameter

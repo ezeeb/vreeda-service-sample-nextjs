@@ -32,5 +32,19 @@ services:
       done
       "
 
+  pkce-cleanup-task:
+    image: curlimages/curl:7.87.0
+    container_name: pkce-cleanup-task
+    environment:
+      - CLEANUP_URL=${PKCE_CLEANUP_URL:-http://host.docker.internal:3000/api/jobs/cleanup-pkce?key=your-secure-key}
+    entrypoint: >
+      /bin/sh -c "
+      while true; do
+        sleep 300;
+        echo \"[PKCE Cleanup] Calling: $$CLEANUP_URL\";
+        curl -f -k -X GET \"$$CLEANUP_URL\" && echo \" -> Success\" || echo \" -> Failed\";
+      done
+      "
+
 volumes:
   mongodb_data:
