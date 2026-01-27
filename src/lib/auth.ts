@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth-config';
 import type { Session } from 'next-auth';
 import { headers } from 'next/headers';
+import { validateAzureB2CToken } from '@/lib/tokenValidator';
 
 /**
  * Generic JWT token decoder
@@ -65,22 +66,37 @@ export function decodeTokenUserId(token: string): string | null {
  * For use in API Routes with Request object
  *
  * Mode Detection: Automatic based on Bearer Token
- * - If Bearer Token present: WebView Mode (fast, no session check)
+ * - If Bearer Token present: WebView Mode (validates against Azure B2C)
  * - Otherwise: Browser Mode (NextAuth Session)
  *
  * Token Validation:
- * - WebView: Trust Model - Token already validated by app, we only decode for User ID
+ * - WebView: Full cryptographic validation against Azure B2C JWKS
+ *   - Signature verification
+ *   - Issuer validation (Azure B2C tenant)
+ *   - Audience validation (client ID)
+ *   - Expiration check
  * - Browser: Full validation via NextAuth
  */
 export async function getUserId(req: Request): Promise<string | null> {
-  // Priority 1: Bearer Token (WebView Mode - fast)
+  // Priority 1: Bearer Token (WebView Mode - validated against Azure B2C)
   const authHeader = req.headers.get('Authorization');
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7);
-    const userId = decodeTokenUserId(token);
-    if (userId) {
-      return userId;
+
+    // Validate token cryptographically against Azure B2C
+    const validationResult = await validateAzureB2CToken(token);
+
+    if (validationResult.valid && validationResult.userId) {
+      return validationResult.userId;
     }
+
+    // Log validation failure for debugging
+    if (!validationResult.valid) {
+      console.warn('[AUTH] Bearer token validation failed:', validationResult.error);
+    }
+
+    // Don't fall through to session - invalid Bearer token should fail
+    return null;
   }
 
   // Priority 2: NextAuth Session (Browser Mode - fallback)
@@ -104,24 +120,39 @@ export async function getUserId(req: Request): Promise<string | null> {
  * For API Routes, use getUserId(req) instead
  *
  * Mode Detection: Automatic based on Bearer Token
- * - If Bearer Token present: WebView Mode (fast, no session check)
+ * - If Bearer Token present: WebView Mode (validates against Azure B2C)
  * - Otherwise: Browser Mode (NextAuth Session)
+ *
+ * Token Validation:
+ * - WebView: Full cryptographic validation against Azure B2C JWKS
+ * - Browser: Full validation via NextAuth
  */
 export async function getServerUserId(): Promise<string | null> {
-  // Priority 1: Bearer token (WebView Mode)
+  // Priority 1: Bearer token (WebView Mode - validated against Azure B2C)
   try {
     const headersList = await headers();
     const authHeader = headersList.get('authorization');
 
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
-      const userId = decodeTokenUserId(token);
-      if (userId) {
-        return userId;
+
+      // Validate token cryptographically against Azure B2C
+      const validationResult = await validateAzureB2CToken(token);
+
+      if (validationResult.valid && validationResult.userId) {
+        return validationResult.userId;
       }
+
+      // Log validation failure for debugging
+      if (!validationResult.valid) {
+        console.warn('[SERVER AUTH] Bearer token validation failed:', validationResult.error);
+      }
+
+      // Don't fall through to session - invalid Bearer token should fail
+      return null;
     }
   } catch (error) {
-    console.error('[SERVER AUTH] Bearer token decode failed:', error);
+    console.error('[SERVER AUTH] Bearer token validation error:', error);
   }
 
   // Priority 2: NextAuth Session (Browser Mode)
